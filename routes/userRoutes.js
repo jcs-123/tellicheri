@@ -4,15 +4,29 @@ const router = express.Router();
 const User = require("../models/User");
 
 router.post("/", async (req, res) => {
-  const { userGroup, name, username, password, mobile, email } = req.body;
-
   try {
-    const existingUser = await User.findOne({ username });
-    if (existingUser) {
-      return res.status(400).json({ message: "Username already exists" });
+    const { userGroup, name, username, password, mobile, email } = req.body;
+
+    const roleMap = {
+      Administrator: "administrator",
+      Developer: "developer",
+      Guest: "guest",
+    };
+
+    if (!roleMap[userGroup]) {
+      return res.status(400).json({ message: "Invalid user group selected" });
     }
 
-    const role = userGroup.toLowerCase(); // Map userGroup to role (e.g., 'Administrator' → 'administrator')
+    const role = roleMap[userGroup];
+
+    if (!name || !username || !password) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(409).json({ message: "Username already exists" });
+    }
 
     const user = new User({
       userGroup,
@@ -25,12 +39,14 @@ router.post("/", async (req, res) => {
     });
 
     await user.save();
-    res.status(201).json({ message: "User created successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(201).json({ message: "User created successfully", user });
+  } catch (error) {
+    console.error("Error creating user:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
+
+
 router.get("/", async (req, res) => {
   try {
     const users = await User.find().sort({ name: 1 });
