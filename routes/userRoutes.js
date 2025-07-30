@@ -88,5 +88,29 @@ router.patch("/:id/password", async (req, res) => {
     res.status(500).json({ message: "Error updating password" });
   }
 });
+// Update password by username (for Admin password reset)
+router.put("/by-username/:username/password", async (req, res) => {
+  try {
+    const { username } = req.params;
+    const { newPassword } = req.body;
+
+    if (!newPassword) {
+      return res.status(400).json({ message: "New password is required" });
+    }
+
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.password = newPassword; // Consider hashing here if needed
+    await user.save();
+
+    res.json({ message: "Password updated successfully" });
+  } catch (err) {
+    console.error("Password reset error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
 
 module.exports = router;
