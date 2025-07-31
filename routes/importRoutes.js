@@ -1,39 +1,32 @@
-const express = require('express');
+import express from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+
 const router = express.Router();
-const multer = require('multer');
-const fs = require('fs');
-const path = require('path');
 
-// Example model mapping
-const models = {
-  "Parishes": require('../models/Parish'),
-  "Priests": require('../models/Priest'),
-  "Administration": require('../models/Administration'),
-  // Add other mappings here...
-};
-
-// Set up multer to parse JSON files
-const upload = multer({ dest: 'uploads/' });
-
-router.post('/upload', upload.single('file'), async (req, res) => {
-  const { table } = req.body;
-  const filePath = req.file.path;
-
-  try {
-    const jsonData = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-
-    if (!models[table]) {
-      return res.status(400).json({ error: 'Unknown table type' });
-    }
-
-    const result = await models[table].insertMany(jsonData);
-    fs.unlinkSync(filePath); // cleanup
-    res.status(200).json({ message: `Uploaded ${result.length} records to ${table}` });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to import data' });
+// Configure multer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = 'uploads/imports';
+    fs.mkdirSync(uploadPath, { recursive: true }); // Ensure directory exists
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    cb(null, `${Date.now()}-${file.originalname}`);
   }
 });
 
-module.exports = router;
+const upload = multer({ storage });
+
+// POST /api/import/upload
+router.post('/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+
+  const fileUrl = `/uploads/imports/${req.file.filename}`;
+  res.status(200).json({ message: 'File uploaded successfully', fileUrl });
+});
+
+export default router;

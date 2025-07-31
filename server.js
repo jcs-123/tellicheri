@@ -19,7 +19,7 @@ import circularRoutes from './routes/circularRoutes.js';
 import galleryRoutes from './routes/galleryRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import logRoutes from './routes/logRoutes.js';
-
+import importRoutes from './routes/importRoutes.js';
 
 
 dotenv.config();
@@ -54,6 +54,7 @@ app.use('/api/circulars', circularRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/logs', logRoutes);
+app.use('/api/import', importRoutes);
 
 // Start server
 const PORT = 5000;
