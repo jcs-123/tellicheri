@@ -4,7 +4,16 @@ import fs from 'fs';
 import path from 'path';
 import {
   Parishes,
-  // ... other models
+  PriestStatus,
+  PriestSubStatus,
+  PriestSecondarySubStatus,
+  Priests,
+  PriestHistories,
+  PriestEducations,
+  PriestOthers,
+  Administration,
+  Institutions,
+  PriestDesignations,
 } from '../models/importModels.js';
 
 const router = express.Router();
@@ -22,19 +31,33 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// Mapping table name to corresponding model
 const modelMap = {
-  'Parishes': Parishes,
-  // other table names...
+  Parishes,
+  PriestStatus,
+  PriestSubStatus,
+  PriestSecondarySubStatus,
+  Priests,
+  PriestHistories,
+  PriestEducations,
+  PriestOthers,
+  Administration,
+  Institutions,
+  PriestDesignations,
 };
 
 // POST /api/import/upload
 router.post('/upload', upload.single('file'), async (req, res) => {
   try {
     const tableName = req.body.table;
-    const filePath = req.file.path;
+    const filePath = req.file?.path;
 
     if (!modelMap[tableName]) {
       return res.status(400).json({ message: `Unknown table: ${tableName}` });
+    }
+
+    if (!filePath || !fs.existsSync(filePath)) {
+      return res.status(400).json({ message: 'File not uploaded properly' });
     }
 
     const rawData = fs.readFileSync(filePath);
@@ -49,7 +72,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
     res.status(200).json({ message: `${jsonData.length} records inserted into ${tableName}` });
   } catch (err) {
-    console.error(err);
+    console.error('Upload Error:', err);
     res.status(500).json({ message: 'Error inserting data', error: err.message });
   }
 });
