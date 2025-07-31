@@ -20,7 +20,7 @@ import galleryRoutes from './routes/galleryRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import logRoutes from './routes/logRoutes.js';
 import importRoutes from './routes/importRoutes.js';
-import { Administration } from './models/importModels.js';
+import administrationRoutes from './routes/administration.js';
 
 
 dotenv.config();
@@ -56,6 +56,7 @@ app.use('/api/gallery', galleryRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/import', importRoutes);
+app.use('/api/administration', administrationRoutes);
 
 // Start server
 const PORT = 5000;
