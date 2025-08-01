@@ -9,7 +9,7 @@ const router = express.Router();
 // Configure multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = 'public/uploads/administration';
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'administration');
     // Create directory if it doesn't exist
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    cb(null, 'image-' + uniqueSuffix + ext);
   }
 });
 
@@ -32,7 +32,7 @@ const fileFilter = (req, file, cb) => {
   if (mimetype && extname) {
     return cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed!'), false);
+    cb(new Error('Only image files are allowed (jpeg, jpg, png, gif)'), false);
   }
 };
 
@@ -61,6 +61,10 @@ router.post('/upload-image', upload.single('image'), async (req, res) => {
 
     const { id } = req.body;
     if (!id) {
+      // Clean up the uploaded file if no ID provided
+      if (req.file) {
+        fs.unlinkSync(req.file.path);
+      }
       return res.status(400).json({ message: 'Record ID is required' });
     }
 
@@ -75,6 +79,8 @@ router.post('/upload-image', upload.single('image'), async (req, res) => {
     );
 
     if (!updatedRecord) {
+      // Clean up the uploaded file if record not found
+      fs.unlinkSync(req.file.path);
       return res.status(404).json({ message: 'Record not found' });
     }
 
@@ -84,6 +90,10 @@ router.post('/upload-image', upload.single('image'), async (req, res) => {
       record: updatedRecord
     });
   } catch (err) {
+    // Clean up the uploaded file if error occurs
+    if (req.file) {
+      fs.unlinkSync(req.file.path);
+    }
     res.status(500).json({ message: err.message });
   }
 });
