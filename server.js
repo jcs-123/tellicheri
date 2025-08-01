@@ -21,6 +21,7 @@ import userRoutes from './routes/userRoutes.js';
 import logRoutes from './routes/logRoutes.js';
 import importRoutes from './routes/importRoutes.js';
 import administrationRoutes from './routes/administration.js';
+import parishroute from './routes/parish.js';
 
 
 dotenv.config();
@@ -57,6 +58,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/administration', administrationRoutes);
+app.use('/api/parish', parishroute);
 
 // Start server
 const PORT = 5000;
