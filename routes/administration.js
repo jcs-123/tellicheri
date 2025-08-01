@@ -35,25 +35,30 @@ router.get('/', async (req, res) => {
 });
 
 // @route POST /api/administration
-router.post('/', upload.single('image'), async (req, res) => {
+// POST /api/upload-image
+router.post('/upload-image', upload.single('image'), async (req, res) => {
   try {
-    const { title, author, position, date } = req.body;
-    const imageUrl = req.file ? `/uploads/admin/${req.file.filename}` : '';
+    const { id } = req.body;
+    if (!req.file) return res.status(400).json({ message: 'No image provided' });
 
-    const newAdmin = new Administration({
-      title,
-      author,
-      position,
-      date,
-      imageUrl,
-    });
+    const imageUrl = `/uploads/admin/${req.file.filename}`;
 
-    await newAdmin.save();
-    res.status(201).json(newAdmin);
+    const updatedAdmin = await Administration.findByIdAndUpdate(
+      id,
+      { imageUrl },
+      { new: true }
+    );
+
+    if (!updatedAdmin) {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    res.status(200).json({ message: 'Image uploaded', imageUrl });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Error saving data', error: err.message });
+    res.status(500).json({ message: 'Upload error', error: err.message });
   }
 });
+
 
 export default router;
