@@ -23,6 +23,7 @@ import importRoutes from './routes/importRoutes.js';
 import administrationRoutes from './routes/administration.js';
 import parishroute from './routes/parish.js';
 import uploadImageRoute from './routes/uploadImage.js';
+import parishesRoute from './routes/parishes.js';
 
 dotenv.config();
 
@@ -61,6 +62,7 @@ app.use('/api/administration', administrationRoutes);
 app.use('/api/parish', parishroute);
 app.use('/api/upload-image', uploadImageRoute);
 app.use('/uploads', express.static('uploads')); // Serve static files
+app.use('/api/parishes', parishesRoute);
 
 
 // Start server
