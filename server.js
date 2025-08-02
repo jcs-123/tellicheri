@@ -59,6 +59,8 @@ app.use('/api/logs', logRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/administration', administrationRoutes);
 app.use('/api/parish', parishroute);
+app.use('/uploads/admin', express.static('uploads/admin'));
+
 
 // Start server
 const PORT = 5000;

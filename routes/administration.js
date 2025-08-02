@@ -1,30 +1,25 @@
+// backend/routes/administration.js
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 import { Administration } from '../models/importModels.js';
 
 const router = express.Router();
 
-// Ensure uploads directory exists
-const uploadPath = 'uploads/admin';
-if (!fs.existsSync(uploadPath)) {
-  fs.mkdirSync(uploadPath, { recursive: true });
-}
-
-// Configure Multer for image uploads
+// Set up Multer storage
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, uploadPath);
+    cb(null, 'uploads/admin/');
   },
   filename: function (req, file, cb) {
-    const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueName + path.extname(file.originalname));
-  },
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+  }
 });
 const upload = multer({ storage });
 
-// @route GET /api/administration
+// GET all administration records
 router.get('/', async (req, res) => {
   try {
     const records = await Administration.find();
@@ -34,31 +29,30 @@ router.get('/', async (req, res) => {
   }
 });
 
-// @route POST /api/administration
-// POST /api/upload-image
+// POST image upload and update admin document
 router.post('/upload-image', upload.single('image'), async (req, res) => {
   try {
     const { id } = req.body;
-    if (!req.file) return res.status(400).json({ message: 'No image provided' });
+
+    if (!req.file) return res.status(400).json({ message: 'No image uploaded' });
 
     const imageUrl = `/uploads/admin/${req.file.filename}`;
 
-    const updatedAdmin = await Administration.findByIdAndUpdate(
+    const updatedDoc = await Administration.findByIdAndUpdate(
       id,
-      { imageUrl },
+      { imageUrl }, // Add or update the imageUrl field dynamically
       { new: true }
     );
 
-    if (!updatedAdmin) {
-      return res.status(404).json({ message: 'Admin not found' });
+    if (!updatedDoc) {
+      return res.status(404).json({ message: 'Admin document not found' });
     }
 
-    res.status(200).json({ message: 'Image uploaded', imageUrl });
+    res.status(200).json({ message: 'Image uploaded successfully', imageUrl });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Upload error', error: err.message });
+    res.status(500).json({ message: 'Upload failed', error: err.message });
   }
 });
-
 
 export default router;
