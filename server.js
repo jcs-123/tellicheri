@@ -24,7 +24,7 @@ import administrationRoutes from './routes/administration.js';
 import parishroute from './routes/parish.js';
 import uploadImageRoute from './routes/uploadImage.js';
 // import parishesRoute from './routes/parishes.js';
-
+import statisticsRoutes from './routes/statistics.js';
 
 
 dotenv.config();
@@ -38,8 +38,8 @@ mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-.then(() => console.log("✅ MongoDB Connected"))
-.catch((err) => console.error("❌ MongoDB Connection Error:", err));
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
 // Serve uploaded videos statically
 app.use('/uploads', express.static(path.join(path.resolve(), 'uploads')));
@@ -65,6 +65,7 @@ app.use('/api/parish', parishroute);
 app.use('/api/upload-image', uploadImageRoute);
 app.use('/uploads', express.static('uploads')); // Serve static files
 // app.use('/api/parishes', parishesRoute);
+app.use('/api/statistics', statisticsRoutes);
 
 
 // Start server
