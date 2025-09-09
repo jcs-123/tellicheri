@@ -25,6 +25,7 @@ import parishroute from './routes/parish.js';
 import uploadImageRoute from './routes/uploadImage.js';
 // import parishesRoute from './routes/parishes.js';
 import statisticsRoutes from './routes/statistics.js';
+import pastoralCouncilRoutes from "./routes/pastoralCouncil.js";
 
 
 dotenv.config();
@@ -66,7 +67,7 @@ app.use('/api/upload-image', uploadImageRoute);
 app.use('/uploads', express.static('uploads')); // Serve static files
 // app.use('/api/parishes', parishesRoute);
 app.use('/api/statistics', statisticsRoutes);
-
+app.use("/api/pastoralCouncil", pastoralCouncilRoutes);
 
 // Start server
 const PORT = 5000;
