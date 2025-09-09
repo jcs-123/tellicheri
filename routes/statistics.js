@@ -11,8 +11,16 @@ router.post("/bulk", async (req, res) => {
       return res.status(400).json({ message: "Invalid data format" });
     }
 
-    await Statistics.deleteMany(); // optional reset
-    await Statistics.insertMany(data);
+    // Transform rows: [["label","value"]] → [{label:"", value:""}]
+    const transformedData = data.map(section => ({
+      title: section.title,
+      rows: section.rows.map(row =>
+        Array.isArray(row) ? { label: row[0], value: row[1] } : row
+      )
+    }));
+
+    await Statistics.deleteMany(); // optional: clears previous data
+    await Statistics.insertMany(transformedData);
 
     res.status(201).json({ message: "Statistics saved successfully" });
   } catch (error) {
