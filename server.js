@@ -19,14 +19,12 @@ import circularRoutes from './routes/circularRoutes.js';
 import galleryRoutes from './routes/galleryRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import logRoutes from './routes/logRoutes.js';
-import importRoutes from './routes/importRoutes.js';
+// import importRoutes from './routes/importRoutes.js';
 import administrationRoutes from './routes/administration.js';
 import parishroute from './routes/parish.js';
 import uploadImageRoute from './routes/uploadImage.js';
-import parishesRoute from './routes/parishes.js';
+// import parishesRoute from './routes/parishes.js';
 
-
-import statisticsRoutes from './routes/statistics.js';
 
 
 dotenv.config();
@@ -61,15 +59,12 @@ app.use('/api/circulars', circularRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/logs', logRoutes);
-app.use('/api/import', importRoutes);
+// app.use('/api/import', importRoutes);
 app.use('/api/administration', administrationRoutes);
 app.use('/api/parish', parishroute);
 app.use('/api/upload-image', uploadImageRoute);
 app.use('/uploads', express.static('uploads')); // Serve static files
-app.use('/api/parishes', parishesRoute);
-
-app.use('/api/statistics', statisticsRoutes);
-
+// app.use('/api/parishes', parishesRoute);
 
 
 // Start server
