@@ -10,4 +10,5 @@ const statisticsSchema = new mongoose.Schema({
   ]
 });
 
-export default mongoose.model("Statistics", statisticsSchema);
+// 👇 Prevents overwriteModelError on hot reload
+export default mongoose.models.Statistics || mongoose.model("Statistics", statisticsSchema);

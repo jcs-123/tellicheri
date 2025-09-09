@@ -3,15 +3,15 @@ import Statistics from "../models/statistics.js";
 
 const router = express.Router();
 
-// ✅ Add bulk statistics (admin uploads JSON)
+// Bulk insert
 router.post("/bulk", async (req, res) => {
   try {
-    const { data } = req.body; // expect { data: [ {title, rows: [{label,value}]} ] }
+    const { data } = req.body;
     if (!data || !Array.isArray(data)) {
       return res.status(400).json({ message: "Invalid data format" });
     }
 
-    await Statistics.deleteMany(); // optional: clear old data
+    await Statistics.deleteMany(); // optional reset
     await Statistics.insertMany(data);
 
     res.status(201).json({ message: "Statistics saved successfully" });
@@ -21,12 +21,13 @@ router.post("/bulk", async (req, res) => {
   }
 });
 
-// ✅ Get all statistics
+// Fetch all
 router.get("/", async (req, res) => {
   try {
     const stats = await Statistics.find();
     res.json(stats);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 });
