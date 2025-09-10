@@ -49,16 +49,30 @@ router.get("/", async (req, res) => {
 
 
 // Get single member by ID
-// Fetch all grouped by category
 // Get single member by ID
+// In your backend routes file
 router.get("/:id", async (req, res) => {
   try {
+    console.log('Fetching member with ID:', req.params.id); // Debug log
+    
+    if (!req.params.id || req.params.id === 'undefined') {
+      return res.status(400).json({ message: "Member ID is required" });
+    }
+    
     const member = await PastoralCouncil.findById(req.params.id);
-    if (!member) return res.status(404).json({ message: "Member not found" });
+    if (!member) {
+      return res.status(404).json({ message: "Member not found" });
+    }
+    
     res.json(member);
   } catch (error) {
     console.error("Error fetching member by ID:", error);
-    res.status(500).json({ message: "Server error" });
+    
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: "Invalid member ID format" });
+    }
+    
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
