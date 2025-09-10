@@ -52,12 +52,12 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const member = await PastoralCouncil.findById(req.params.id);
-    if (!member) return res.status(404).json({ message: "Member not found" });
+    if (!member) return res.status(404).json({ message: "Not found" });
     res.json(member);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
+
 
 export default router;
