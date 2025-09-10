@@ -66,15 +66,44 @@ router.get("/", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-// GET member by ID
-// GET member by ID
+router.get("/", async (req, res) => {
+  try {
+    const members = await PastoralCouncil.find().lean();
+    const groupedData = {};
+
+    members.forEach(member => {
+      if (!groupedData[member.category]) groupedData[member.category] = [];
+      groupedData[member.category].push({
+        _id: member._id,
+        name: member.name,
+        designation: member.designation,
+        address: member.address,
+        photo: member.photo,
+        place: member.place,
+        parish: member.parish
+      });
+    });
+
+    res.json(groupedData);
+  } catch (error) {
+    console.error("Error fetching pastoral council:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET member by Object ID (_id)
 router.get('/:id', async (req, res) => {
   try {
     const member = await PastoralCouncil.findById(req.params.id).lean();
-    if (!member) return res.status(404).json({ message: 'Member not found' });
+    if (!member) {
+      return res.status(404).json({ message: 'Member not found' });
+    }
     res.json(member);
   } catch (err) {
     console.error(err);
+    if (err.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid member ID format' });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 });
