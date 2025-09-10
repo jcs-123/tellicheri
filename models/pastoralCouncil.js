@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 
-const memberSchema = new mongoose.Schema({
+const pastoralCouncilSchema = new mongoose.Schema({
   name: { type: String, required: true },
   designation: { type: String, required: true },
-  address: { type: String, default: "" },
+  address: { type: String },
   category: { type: String, required: true }
 });
 
-export default mongoose.models.PastoralCouncil || mongoose.model("PastoralCouncil", memberSchema);
+export default mongoose.model("PastoralCouncil", pastoralCouncilSchema);

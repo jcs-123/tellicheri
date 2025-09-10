@@ -57,11 +57,9 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ message: "Member not found" });
     }
     res.json(member);
-  } catch (error) {
-    console.error("Error fetching member:", error);
+  } catch (err) {
+    console.error("Error fetching member:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
-
-
 export default router;
