@@ -66,26 +66,6 @@ router.get("/", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-// GET member by ID
-// routes/pastoralCouncil.js
-router.get("/", async (req, res) => {
-  try {
-    const members = await PastoralCouncil.find().lean();
-    const grouped = {};
-
-    members.forEach((m) => {
-      if (!grouped[m.category]) grouped[m.category] = [];
-      grouped[m.category].push(m); // push full document with _id
-    });
-
-    res.json(grouped);
-  } catch (error) {
-    console.error("Error fetching pastoral council:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-
 
 
 export default router;
