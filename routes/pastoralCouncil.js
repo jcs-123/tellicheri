@@ -67,25 +67,24 @@ router.get("/", async (req, res) => {
   }
 });
 // GET member by ID
-router.get('/:id', async (req, res) => {
-  const { id } = req.params;
-
-  // Validate ObjectId
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ message: 'Invalid member ID' });
-  }
-
+// routes/pastoralCouncil.js
+router.get("/", async (req, res) => {
   try {
-    const member = await PastoralCouncil.findById(id);
-    if (!member) {
-      return res.status(404).json({ message: 'Member not found' });
-    }
-    res.json(member);
-  } catch (err) {
-    console.error('Error fetching member:', err);
-    res.status(500).json({ message: 'Internal server error' });
+    const members = await PastoralCouncil.find().lean();
+    const grouped = {};
+
+    members.forEach((m) => {
+      if (!grouped[m.category]) grouped[m.category] = [];
+      grouped[m.category].push(m); // push full document with _id
+    });
+
+    res.json(grouped);
+  } catch (error) {
+    console.error("Error fetching pastoral council:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
+
 
 
 
