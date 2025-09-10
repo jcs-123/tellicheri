@@ -49,13 +49,27 @@ router.get("/", async (req, res) => {
   }
 });
 // Fetch single member by ID
-router.get("/:id", async (req, res) => {
+// Fetch all grouped by category
+router.get("/", async (req, res) => {
   try {
-    const member = await PastoralCouncil.findById(req.params.id);
-    if (!member) return res.status(404).json({ message: "Not found" });
-    res.json(member);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const members = await PastoralCouncil.find();
+    const grouped = {};
+
+    members.forEach((m) => {
+      if (!grouped[m.category]) grouped[m.category] = [];
+      grouped[m.category].push({
+        _id: m._id,          // ✅ include id
+        name: m.name,
+        designation: m.designation,
+        address: m.address,
+        category: m.category // optional: helpful for detail view
+      });
+    });
+
+    res.json(grouped);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
