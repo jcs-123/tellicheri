@@ -48,24 +48,16 @@ router.get("/", async (req, res) => {
 });
 
 
-router.get("/", async (req, res) => {
+// Get single member by ID
+router.get("/:id", async (req, res) => {
   try {
-    const members = await PastoralCouncil.find();
-    const grouped = {};
-
-    members.forEach((m) => {
-      if (!grouped[m.category]) grouped[m.category] = [];
-      grouped[m.category].push({
-        _id: m._id,          // ✅ ensure ID is returned
-        name: m.name,
-        designation: m.designation,
-        address: m.address,
-        category: m.category
-      });
-    });
-
-    res.json(grouped);
-  } catch (err) {
+    const member = await PastoralCouncil.findById(req.params.id);
+    if (!member) {
+      return res.status(404).json({ message: "Member not found" });
+    }
+    res.json(member);
+  } catch (error) {
+    console.error("Error fetching member:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
