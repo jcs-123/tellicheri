@@ -4,18 +4,19 @@ import PastoralCouncil from "../models/pastoralCouncil.js";
 const router = express.Router();
 
 // Bulk insert
+// Bulk insert
 router.post("/bulk", async (req, res) => {
   try {
-    const { data } = req.body;
-    if (!data || typeof data !== "object") {
+    const councilData = req.body;  // ✅ no destructuring "data"
+
+    if (!councilData || typeof councilData !== "object") {
       return res.status(400).json({ message: "Invalid data format" });
     }
 
-    await PastoralCouncil.deleteMany(); // optional reset
+    await PastoralCouncil.deleteMany();
     const membersArray = [];
 
-    // Convert grouped JSON to array of members
-    Object.entries(data).forEach(([category, members]) => {
+    Object.entries(councilData).forEach(([category, members]) => {
       members.forEach((m) => {
         membersArray.push({ ...m, category });
       });
@@ -28,6 +29,7 @@ router.post("/bulk", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 // Fetch all grouped by category
 router.get("/", async (req, res) => {
