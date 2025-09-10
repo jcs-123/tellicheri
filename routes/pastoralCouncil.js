@@ -67,6 +67,7 @@ router.get("/", async (req, res) => {
   }
 });
 // GET member by ID
+// GET member by ID
 router.get('/:id', async (req, res) => {
   try {
     const member = await PastoralCouncil.findById(req.params.id).lean();
