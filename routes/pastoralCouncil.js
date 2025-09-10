@@ -51,28 +51,22 @@ router.get("/", async (req, res) => {
 // Get single member by ID
 // Get single member by ID
 // In your backend routes file
-router.get("/:id", async (req, res) => {
+// In your backend route
+router.get("/", async (req, res) => {
   try {
-    console.log('Fetching member with ID:', req.params.id); // Debug log
-    
-    if (!req.params.id || req.params.id === 'undefined') {
-      return res.status(400).json({ message: "Member ID is required" });
-    }
-    
-    const member = await PastoralCouncil.findById(req.params.id);
-    if (!member) {
-      return res.status(404).json({ message: "Member not found" });
-    }
-    
-    res.json(member);
+    const councils = await PastoralCouncil.find().lean(); // .lean() returns plain JS objects
+    // Group by category
+    const groupedData = {};
+    councils.forEach(council => {
+      if (!groupedData[council.category]) {
+        groupedData[council.category] = [];
+      }
+      groupedData[council.category].push(council);
+    });
+    res.json(groupedData);
   } catch (error) {
-    console.error("Error fetching member by ID:", error);
-    
-    if (error.name === 'CastError') {
-      return res.status(400).json({ message: "Invalid member ID format" });
-    }
-    
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Error fetching pastoral council:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
