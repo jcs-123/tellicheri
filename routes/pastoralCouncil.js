@@ -46,5 +46,16 @@ router.get("/", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+// Fetch single member by ID
+router.get("/:id", async (req, res) => {
+  try {
+    const member = await PastoralCouncil.findById(req.params.id);
+    if (!member) return res.status(404).json({ message: "Member not found" });
+    res.json(member);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 export default router;
