@@ -47,4 +47,28 @@ router.get("/", async (req, res) => {
   }
 });
 
+
+// Fetch all grouped by category
+router.get("/", async (req, res) => {
+  try {
+    const members = await PastoralCouncil.find();
+    const grouped = {};
+
+    members.forEach((m) => {
+      if (!grouped[m.category]) grouped[m.category] = [];
+      grouped[m.category].push({
+        _id: m._id,  // ✅ include _id for linking
+        name: m.name,
+        designation: m.designation,
+        address: m.address
+      });
+    });
+
+    res.json(grouped);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 export default router;
