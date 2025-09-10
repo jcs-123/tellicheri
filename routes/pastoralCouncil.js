@@ -51,22 +51,20 @@ router.get("/", async (req, res) => {
 
 // In your backend route
 router.get("/", async (req, res) => {
-    try {
-        const councils = await PastoralCouncil.find().lean(); // .lean() returns plain JS objects
-        // Group by category
-        const groupedData = {};
-        councils.forEach(council => {
-            if (!groupedData[council.category]) {
-                groupedData[council.category] = [];
-            }
-            groupedData[council.category].push(council);
-        });
-        res.json(groupedData);
-    } catch (error) {
-        console.error("Error fetching pastoral council:", error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
+  try {
+    const members = await PastoralCouncil.find().lean(); // Get plain JS objects
+    const groupedData = {};
 
+    members.forEach(member => {
+      if (!groupedData[member.category]) groupedData[member.category] = [];
+      groupedData[member.category].push(member);
+    });
+
+    res.json(groupedData);
+  } catch (error) {
+    console.error("Error fetching pastoral council:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 export default router;

@@ -1,11 +1,11 @@
 import mongoose from "mongoose";
 
-const serviceHistorySchema = new mongoose.Schema({
-  type: { type: String, default: "" },
-  place: { type: String, default: "" },
-  designation: { type: String, default: "" },
-  duration: { type: String, default: "" }
-}, { _id: false });
+const serviceSchema = new mongoose.Schema({
+  type: String,
+  place: String,
+  designation: String,
+  duration: String
+});
 
 const memberSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -20,7 +20,7 @@ const memberSchema = new mongoose.Schema({
   feastDay: { type: String, default: "" },
   phone: { type: String, default: "" },
   email: { type: String, default: "" },
-  serviceHistory: { type: [serviceHistorySchema], default: [] }
+  serviceHistory: [serviceSchema]
 });
 
 export default mongoose.models.PastoralCouncil || mongoose.model("PastoralCouncil", memberSchema);
