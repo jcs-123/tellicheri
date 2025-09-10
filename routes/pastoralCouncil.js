@@ -68,15 +68,25 @@ router.get("/", async (req, res) => {
 });
 // GET member by ID
 router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  // Validate ObjectId
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid member ID' });
+  }
+
   try {
-    const member = await PastoralCouncil.findById(req.params.id).lean();
-    if (!member) return res.status(404).json({ message: 'Member not found' });
+    const member = await PastoralCouncil.findById(id);
+    if (!member) {
+      return res.status(404).json({ message: 'Member not found' });
+    }
     res.json(member);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching member:', err);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 
 export default router;
