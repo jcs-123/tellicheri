@@ -3,7 +3,44 @@ import PastoralCouncil from "../models/pastoralCouncil.js";
 
 const router = express.Router();
 
-// Bulk insert
+// Fetch all grouped by category
+router.get("/", async (req, res) => {
+    try {
+        const members = await PastoralCouncil.find().lean();
+        const groupedData = {};
+
+        members.forEach(member => {
+            if (!groupedData[member.category]) groupedData[member.category] = [];
+            groupedData[member.category].push({
+                _id: member._id,
+                name: member.name,
+                designation: member.designation,
+                address: member.address
+            });
+        });
+
+        res.json(groupedData);
+    } catch (error) {
+        console.error("Error fetching pastoral council:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// Fetch single member by ID
+router.get("/:id", async (req, res) => {
+    try {
+        const member = await PastoralCouncil.findById(req.params.id);
+        if (!member) {
+            return res.status(404).json({ message: "Member not found" });
+        }
+        res.json(member);
+    } catch (error) {
+        console.error("Error fetching member:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// Bulk insert (optional)
 router.post("/bulk", async (req, res) => {
     try {
         const { data } = req.body;
@@ -28,44 +65,5 @@ router.post("/bulk", async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 });
-
-// Fetch all grouped by category
-router.get("/", async (req, res) => {
-    try {
-        const members = await PastoralCouncil.find();
-        const grouped = {};
-
-        members.forEach((m) => {
-            if (!grouped[m.category]) grouped[m.category] = [];
-            grouped[m.category].push({ name: m.name, designation: m.designation, address: m.address });
-        });
-
-        res.json(grouped);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
-
-
-// In your backend route
-router.get("/", async (req, res) => {
-  try {
-    const members = await PastoralCouncil.find().lean(); // Get plain JS objects
-    const groupedData = {};
-
-    members.forEach(member => {
-      if (!groupedData[member.category]) groupedData[member.category] = [];
-      groupedData[member.category].push(member);
-    });
-
-    res.json(groupedData);
-  } catch (error) {
-    console.error("Error fetching pastoral council:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
 
 export default router;
