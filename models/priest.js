@@ -1,23 +1,24 @@
 // models/priest.js
 import mongoose from "mongoose";
 
-const serviceHistorySchema = new mongoose.Schema({
-  // 👇 field named "type" must be declared this way
-  type: { type: String },
-  place: String,
-  designation: String,
-  duration: String
-}, { _id: false });
-
 const priestSchema = new mongoose.Schema({
-  name: { type: String, required: true, index: true },
-  designation: String,
-  address: String,
-  parish: String,
-  phone: String,
-  email: String,
-  photo: String,
-  serviceHistory: [serviceHistorySchema]
-}, { timestamps: true });
+  name: { type: String, required: true },
+  designation: { type: String, required: true },
+  address: { type: String, default: "" },
+  photo: { type: String, default: "" },
+  place: { type: String, default: "" },
+  parish: { type: String, default: "" },
+  status: { type: String, default: "" },
+  dob: { type: String, default: "" },
+  feastDay: { type: String, default: "" },
+  phone: { type: String, default: "" },
+  email: { type: String, default: "" },
+  serviceHistory: [{
+    type: String,
+    place: String,
+    designation: String,
+    duration: String
+  }]
+});
 
-export default mongoose.model("Priest", priestSchema);
+export default mongoose.models.Priest || mongoose.model("Priest", priestSchema);
