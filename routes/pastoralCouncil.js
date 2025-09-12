@@ -1,15 +1,15 @@
+// routes/pastoralCouncil.js
 import express from "express";
 import PastoralCouncil from "../models/pastoralCouncil.js";
 import Priest from "../models/priest.js";
 
 const router = express.Router();
 
-// GET /
+// GET all (grouped by category)
 router.get("/", async (req, res) => {
   try {
     const members = await PastoralCouncil.find().lean();
     const groupedData = {};
-
     for (const m of members) {
       if (!groupedData[m.category]) groupedData[m.category] = [];
       groupedData[m.category].push({
@@ -20,10 +20,23 @@ router.get("/", async (req, res) => {
         priestId: m.priestId || null
       });
     }
-
     res.json(groupedData);
   } catch (e) {
     console.error("Error fetching pastoral council:", e);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET single member by ID
+router.get("/:id", async (req, res) => {
+  try {
+    const member = await PastoralCouncil.findById(req.params.id);
+    if (!member) {
+      return res.status(404).json({ message: "Member not found" });
+    }
+    res.json(member);
+  } catch (e) {
+    console.error("Error fetching member:", e);
     res.status(500).json({ message: "Server error" });
   }
 });
