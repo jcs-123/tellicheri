@@ -21,6 +21,7 @@ import userRoutes from './routes/userRoutes.js';
 import logRoutes from './routes/logRoutes.js';
 import statisticsRoutes from './routes/statistics.js';
 import pastoralCouncilRoutes from "./routes/pastoralCouncil.js";
+import priestRoutes from './routes/priest.js';
 
 
 dotenv.config();
@@ -57,9 +58,10 @@ app.use('/api/users', userRoutes);
 app.use('/api/logs', logRoutes);
 // app.use('/api/import', importRoutes);
 app.use('/uploads', express.static('uploads')); // Serve static files
-// app.use('/api/parishes', parishesRoute);
 app.use('/api/statistics', statisticsRoutes);
 app.use("/api/pastoralCouncil", pastoralCouncilRoutes);
+app.use('/api/priests', priestRoutes);
+
 
 // Start server
 const PORT = 5000;
