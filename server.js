@@ -60,7 +60,10 @@ app.use('/api/logs', logRoutes);
 app.use('/uploads', express.static('uploads')); // Serve static files
 app.use('/api/statistics', statisticsRoutes);
 app.use("/api/pastoralCouncil", pastoralCouncilRoutes);
+console.log('✅ Mounted /api/pastoralCouncil');
+
 app.use('/api/priests', priestRoutes);
+console.log('✅ Mounted /api/priests');
 
 
 // Start server
