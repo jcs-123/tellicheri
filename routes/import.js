@@ -1,6 +1,8 @@
-const express = require('express');
+// routes/import.js
+import express from 'express';
+import mongoose from 'mongoose';
+
 const router = express.Router();
-const mongoose = require('mongoose');
 
 // MongoDB Parish Schema
 const parishSchema = new mongoose.Schema({
@@ -55,7 +57,6 @@ const priestSchema = new mongoose.Schema({
   status: String,
   designation: String,
   parish_id: String,
-  // Add other priest fields as needed
 }, { timestamps: true });
 
 const Priest = mongoose.model('Priest', priestSchema);
@@ -214,4 +215,4 @@ router.post('/priests', async (req, res) => {
 
 // Add more import endpoints for other tables as needed
 
-module.exports = router;
+export default router;
