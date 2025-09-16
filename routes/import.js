@@ -212,7 +212,23 @@ router.post('/priests', async (req, res) => {
     });
   }
 });
+// Add this at the top of your routes/import.js file
+router.get('/test', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Import API is working!',
+    timestamp: new Date().toISOString()
+  });
+});
 
+router.post('/test', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'POST request received!',
+    data: req.body,
+    timestamp: new Date().toISOString()
+  });
+});
 // Add more import endpoints for other tables as needed
 
 export default router;
