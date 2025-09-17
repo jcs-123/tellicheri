@@ -172,7 +172,7 @@ router.post('/parishes', async (req, res) => {
 });
 
 // Import priest status data
-router.post('/priest-status', async (req, res) => {
+router.post('/priest-others', async (req, res) => {
   try {
     const statusData = req.body;
     
