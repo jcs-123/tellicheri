@@ -127,58 +127,45 @@ router.post('/priest-status', async (req, res) => {
 });
 
 // Import priests data
-function parseDate(value) {
-  if (!value || value === "0000-00-00") return null;
-  const date = new Date(value);
-  return isNaN(date.getTime()) ? null : date;
-}
-
 router.post('/priests', async (req, res) => {
   try {
     const priestsData = req.body;
-
+    
     if (!Array.isArray(priestsData)) {
       return res.status(400).json({ 
         success: false, 
         message: 'Invalid data format. Expected an array.' 
       });
     }
-
+    
     let importedCount = 0;
     let errors = [];
-
+    
     for (const priest of priestsData) {
       try {
-        // Normalize date fields
-        priest.dob = parseDate(priest.dob);
-        priest.baptism_date = parseDate(priest.baptism_date);
-        priest.ordination_date = parseDate(priest.ordination_date);
-        priest.join_seminary = parseDate(priest.join_seminary);
-        priest.profession_date = parseDate(priest.profession_date);
-        priest.death_date = parseDate(priest.death_date);
-
         const existingPriest = await Priest.findOne({ 
           $or: [{ id: priest.id }, { email: priest.email }] 
         });
-
+        
         if (existingPriest) {
-          await Priest.findByIdAndUpdate(existingPriest._id, priest, { new: true });
+          await Priest.findByIdAndUpdate(existingPriest._id, priest);
         } else {
           await Priest.create(priest);
         }
-
+        
         importedCount++;
       } catch (error) {
         console.error(`Error processing priest ${priest.id}:`, error);
         errors.push({ id: priest.id, error: error.message });
       }
     }
-
+    
     res.json({
       success: true,
       message: `Imported ${importedCount} priests successfully. ${errors.length} errors occurred.`,
       errors: errors
     });
+    
   } catch (error) {
     console.error('Import error:', error);
     res.status(500).json({ 
@@ -187,6 +174,5 @@ router.post('/priests', async (req, res) => {
     });
   }
 });
-
 
 export default router;
