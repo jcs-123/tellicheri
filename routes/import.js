@@ -1,65 +1,27 @@
-// routes/import.js
 import express from 'express';
-import mongoose from 'mongoose';
+import Parish from '../models/Parish.js';
+import PriestStatus from '../models/Priestothers.js';
+import Priest from '../models/Priest.js';
 
 const router = express.Router();
 
-// MongoDB Parish Schema
-const parishSchema = new mongoose.Schema({
-  id: String,
-  archival_code: String,
-  name: String,
-  place: String,
-  patron_name: String,
-  parish_type: String,
-  shrine: String,
-  forane_name: String,
-  parish_coordinators: String,
-  address: String,
-  phone: String,
-  mobile: String,
-  whatsapp_number: String,
-  pan_card_num: String,
-  grade: String,
-  email: String,
-  website: String,
-  area: Number,
-  no_family_units: Number,
-  no_families: Number,
-  total_population: Number,
-  estb_date: Date,
-  latitude: Number,
-  longitude: Number,
-  status: String,
-  vicar_name: String,
-  asst_vicar_names: String,
-  resident_vicar_names: String
-}, { timestamps: true });
+// Test endpoint
+router.get('/test', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Import API is working!',
+    timestamp: new Date().toISOString()
+  });
+});
 
-const Parish = mongoose.model('Parish', parishSchema);
-
-// Priest Status Schema
-const priestStatusSchema = new mongoose.Schema({
-  id: String,
-  name: String,
-  description: String,
-  status: String
-}, { timestamps: true });
-
-const PriestStatus = mongoose.model('PriestStatus', priestStatusSchema);
-
-// Priest Schema
-const priestSchema = new mongoose.Schema({
-  id: String,
-  name: String,
-  email: String,
-  phone: String,
-  status: String,
-  designation: String,
-  parish_id: String,
-}, { timestamps: true });
-
-const Priest = mongoose.model('Priest', priestSchema);
+router.post('/test', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'POST request received!',
+    data: req.body,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Import parishes data
 router.post('/parishes', async (req, res) => {
@@ -212,23 +174,5 @@ router.post('/priests', async (req, res) => {
     });
   }
 });
-// Add this at the top of your routes/import.js file
-router.get('/test', (req, res) => {
-  res.json({ 
-    success: true, 
-    message: 'Import API is working!',
-    timestamp: new Date().toISOString()
-  });
-});
-
-router.post('/test', (req, res) => {
-  res.json({ 
-    success: true, 
-    message: 'POST request received!',
-    data: req.body,
-    timestamp: new Date().toISOString()
-  });
-});
-// Add more import endpoints for other tables as needed
 
 export default router;
