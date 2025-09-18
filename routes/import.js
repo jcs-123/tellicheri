@@ -549,19 +549,13 @@ router.get('/priests/obituary', async (req, res) => {
 
     console.log("🔍 Fetching obituary with filter:", filter);
 
-    // Base: only include priests with a valid death_date OR expired = "Y"
-    let query = {
-      $or: [
-        { death_date: { $type: "date" } },
-        { expired: "Y" }
-      ]
-    };
+    // Base query: only priests with a death_date
+    let query = { death_date: { $ne: null } };
 
-    // Apply filter on death_date only if it exists
     if (filter === "after") {
-      query.$and = [{ death_date: { $gte: new Date(`${year}-01-01`) } }];
+      query.death_date = { $gte: new Date(`${year}-01-01`) };
     } else if (filter === "before") {
-      query.$and = [{ death_date: { $lt: new Date(`${year}-01-01`) } }];
+      query.death_date = { $lt: new Date(`${year}-01-01`) };
     }
 
     console.log("👉 Final Mongo Query:", JSON.stringify(query, null, 2));
