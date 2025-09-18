@@ -551,6 +551,8 @@ router.get('/priests/obituary', async (req, res) => {
       query.death_date = { $lt: new Date(`${year}-01-01`) };
     }
 
+    console.log('Running obituary query:', query);
+
     const priests = await Priest.find(query).sort({ death_date: -1 });
 
     res.json({
@@ -559,8 +561,8 @@ router.get('/priests/obituary', async (req, res) => {
       data: priests
     });
   } catch (error) {
-    console.error('Error fetching obituary:', error.message);
-    res.status(500).json({ success: false, message: 'Server error while fetching obituary' });
+    console.error('Error fetching obituary:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
