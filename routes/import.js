@@ -541,33 +541,34 @@ router.get('/priests/:id', async (req, res) => {
 // Fetch obituary priests (from Priest collection)
 // Fetch obituary priests (from Priest collection)
 // Fetch obituary priests safely
+// Fetch obituary priests safely
 router.get('/priests/obituary', async (req, res) => {
   try {
     const { filter } = req.query;
     const year = 2020;
 
-    console.log("👉 Received filter:", filter);
+    console.log("🔍 Fetching obituary with filter:", filter);
 
-    // Base query: priests who either have a valid death_date OR expired marked "Y"
+    // Base: only include priests with a valid death_date OR expired = "Y"
     let query = {
       $or: [
-        { death_date: { $type: "date" } },   // only valid dates
+        { death_date: { $type: "date" } },
         { expired: "Y" }
       ]
     };
 
-    // Add filter condition
+    // Apply filter on death_date only if it exists
     if (filter === "after") {
-      query.death_date = { $gte: new Date(`${year}-01-01`) };
+      query.$and = [{ death_date: { $gte: new Date(`${year}-01-01`) } }];
     } else if (filter === "before") {
-      query.death_date = { $lt: new Date(`${year}-01-01`) };
+      query.$and = [{ death_date: { $lt: new Date(`${year}-01-01`) } }];
     }
 
-    console.log("👉 Mongo query:", JSON.stringify(query));
+    console.log("👉 Final Mongo Query:", JSON.stringify(query, null, 2));
 
     const priests = await Priest.find(query).sort({ death_date: -1 }).lean();
 
-    console.log("✅ Found priests:", priests.length);
+    console.log("✅ Priests found:", priests.length);
 
     res.json({ success: true, count: priests.length, data: priests });
   } catch (error) {
@@ -579,6 +580,7 @@ router.get('/priests/obituary', async (req, res) => {
     });
   }
 });
+
 
 
 
