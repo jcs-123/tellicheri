@@ -548,7 +548,9 @@ router.get('/priests/obituary', async (req, res) => {
   try {
     const { filter } = req.query; // after | before
     const year = 2020;
-    let query = { death_date: { $ne: null } };
+
+    // Base: must have a valid death_date
+    let query = { death_date: { $exists: true, $ne: null } };
 
     if (filter === 'after') {
       query.death_date = { $gte: new Date(`${year}-01-01`) };
@@ -564,7 +566,7 @@ router.get('/priests/obituary', async (req, res) => {
       data: priests
     });
   } catch (error) {
-    console.error('Error fetching obituary:', error);
+    console.error('Error fetching obituary:', error.message);
     res.status(500).json({ success: false, message: 'Server error while fetching obituary' });
   }
 });
