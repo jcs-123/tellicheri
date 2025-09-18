@@ -367,23 +367,23 @@ router.post('/priests', async (req, res) => {
 
 // Helper function to clean and format priest data
 function cleanPriestData(data) {
-  const cleaned = { ...data };
+    const cleaned = { ...data };
 
-  const dateFields = [
-    'baptism_date', 'dob', 'join_seminary', 'ordination_date',
-    'profession_date', 'death_date'
-  ];
+    const dateFields = [
+        'baptism_date', 'dob', 'join_seminary', 'ordination_date',
+        'profession_date', 'death_date'
+    ];
 
-  dateFields.forEach(field => {
-    if (cleaned[field] && cleaned[field] !== '0000-00-00' && cleaned[field] !== '') {
-      const parsedDate = new Date(cleaned[field]);
-      cleaned[field] = isNaN(parsedDate.getTime()) ? null : parsedDate;
-    } else {
-      cleaned[field] = null;
-    }
-  });
+    dateFields.forEach(field => {
+        if (cleaned[field] && cleaned[field] !== '0000-00-00' && cleaned[field] !== '') {
+            const parsedDate = new Date(cleaned[field]);
+            cleaned[field] = isNaN(parsedDate.getTime()) ? null : parsedDate;
+        } else {
+            cleaned[field] = null;
+        }
+    });
 
-  return cleaned;
+    return cleaned;
 }
 
 
@@ -525,44 +525,45 @@ router.get('/priests', async (req, res) => {
 });
 // ✅ Fetch obituary priests first
 router.get('/priests/obituary', async (req, res) => {
-  try {
-    const { filter } = req.query;
-    const year = 2020;
+    try {
+        const { filter } = req.query;
+        const year = 2020;
 
-    console.log("🔍 Fetching obituary with filter:", filter);
+        console.log("🔍 Fetching obituary with filter:", filter);
 
-    let query = { death_date: { $ne: null } };
+        let query = { death_date: { $ne: null } };
 
-    if (filter === "after") {
-      query.death_date = { $gte: new Date(`${year}-01-01`) };
-    } else if (filter === "before") {
-      query.death_date = { $lt: new Date(`${year}-01-01`) };
+        if (filter === "after") {
+            query.$and = [{ death_date: { $gte: new Date(`${year}-01-01`) } }];
+        } else if (filter === "before") {
+            query.$and = [{ death_date: { $lt: new Date(`${year}-01-01`) } }];
+        }
+
+
+        console.log("👉 Final Mongo Query:", query);
+
+        const priests = await Priest.find(query).sort({ death_date: -1 }).lean();
+
+        console.log("✅ Priests found:", priests.length);
+        res.json({ success: true, count: priests.length, data: priests });
+    } catch (error) {
+        console.error("❌ Error fetching obituary:", error);
+        res.status(500).json({ success: false, message: "Server error while fetching obituary" });
     }
-
-    console.log("👉 Final Mongo Query:", query);
-
-    const priests = await Priest.find(query).sort({ death_date: -1 }).lean();
-
-    console.log("✅ Priests found:", priests.length);
-    res.json({ success: true, count: priests.length, data: priests });
-  } catch (error) {
-    console.error("❌ Error fetching obituary:", error);
-    res.status(500).json({ success: false, message: "Server error while fetching obituary" });
-  }
 });
 
 // 👇 Place dynamic route after
 router.get('/priests/:id', async (req, res) => {
-  try {
-    const priest = await Priest.findById(req.params.id);
-    if (!priest) {
-      return res.status(404).json({ success: false, message: 'Priest not found' });
+    try {
+        const priest = await Priest.findById(req.params.id);
+        if (!priest) {
+            return res.status(404).json({ success: false, message: 'Priest not found' });
+        }
+        res.json({ success: true, data: priest });
+    } catch (error) {
+        console.error('Error fetching priest details:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
     }
-    res.json({ success: true, data: priest });
-  } catch (error) {
-    console.error('Error fetching priest details:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
 });
 
 
