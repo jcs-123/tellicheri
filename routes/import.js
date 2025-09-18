@@ -543,6 +543,34 @@ router.get('/priests/:id', async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
+// Fetch obituary priests (those with death_date not null)
+router.get('/obituary', async (req, res) => {
+  try {
+    const { year, filter } = req.query; // optional filters
+    let query = { death_date: { $ne: null } };
+
+    // If year filter applied
+    if (filter === 'after' && year) {
+      query.death_date = { $gte: new Date(`${year}-01-01`) };
+    } else if (filter === 'before' && year) {
+      query.death_date = { $lt: new Date(`${year}-01-01`) };
+    }
+
+    const priests = await Priest.find(query).sort({ death_date: -1 });
+
+    res.json({
+      success: true,
+      count: priests.length,
+      data: priests
+    });
+  } catch (error) {
+    console.error('Error fetching obituary:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching obituary data'
+    });
+  }
+});
 
 
 export default router;
