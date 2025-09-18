@@ -540,7 +540,7 @@ router.get('/priests/:id', async (req, res) => {
 });
 // Fetch obituary priests (from Priest collection)
 // Fetch obituary priests (from Priest collection)
-// Obituary API
+// Fetch obituary priests safely
 router.get('/priests/obituary', async (req, res) => {
   try {
     const { filter } = req.query;
@@ -548,17 +548,24 @@ router.get('/priests/obituary', async (req, res) => {
 
     console.log("👉 Received filter:", filter);
 
-    let query = { death_date: { $ne: null } };
+    // Base query: priests who either have a valid death_date OR expired marked "Y"
+    let query = {
+      $or: [
+        { death_date: { $type: "date" } },   // only valid dates
+        { expired: "Y" }
+      ]
+    };
 
-    if (filter === 'after') {
+    // Add filter condition
+    if (filter === "after") {
       query.death_date = { $gte: new Date(`${year}-01-01`) };
-    } else if (filter === 'before') {
+    } else if (filter === "before") {
       query.death_date = { $lt: new Date(`${year}-01-01`) };
     }
 
     console.log("👉 Mongo query:", JSON.stringify(query));
 
-    const priests = await Priest.find(query).sort({ death_date: -1 });
+    const priests = await Priest.find(query).sort({ death_date: -1 }).lean();
 
     console.log("✅ Found priests:", priests.length);
 
@@ -567,9 +574,8 @@ router.get('/priests/obituary', async (req, res) => {
     console.error("❌ Error fetching obituary:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching obituary',
-      error: error.message,       // send actual error
-      stack: error.stack          // send stack for debugging
+      message: "Server error while fetching obituary",
+      error: error.message,
     });
   }
 });
