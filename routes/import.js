@@ -524,6 +524,7 @@ router.get('/priests', async (req, res) => {
     }
 });
 // ✅ Fetch obituary priests first
+// ✅ Fetch obituary priests
 router.get('/priests/obituary', async (req, res) => {
   try {
     const { filter } = req.query;
@@ -534,12 +535,12 @@ router.get('/priests/obituary', async (req, res) => {
     let query = { death_date: { $ne: null } };
 
     if (filter === "after") {
-      query.death_date = { $gte: new Date(`${year}-01-01`) };
+      query.death_date = { ...query.death_date, $gte: new Date(`${year}-01-01`) };
     } else if (filter === "before") {
-      query.death_date = { $lt: new Date(`${year}-01-01`) };
+      query.death_date = { ...query.death_date, $lt: new Date(`${year}-01-01`) };
     }
 
-    console.log("👉 Final Mongo Query:", query);
+    console.log("👉 Final Mongo Query:", JSON.stringify(query));
 
     const priests = await Priest.find(query).sort({ death_date: -1 }).lean();
 
