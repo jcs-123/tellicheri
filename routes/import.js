@@ -528,5 +528,21 @@ router.get('/priests', async (req, res) => {
     });
   }
 });
+// Fetch single priest by ID
+router.get('/priests/:id', async (req, res) => {
+  try {
+    const priest = await Priest.findById(req.params.id);
+
+    if (!priest) {
+      return res.status(404).json({ success: false, message: 'Priest not found' });
+    }
+
+    res.json({ success: true, data: priest });
+  } catch (error) {
+    console.error('Error fetching priest details:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 
 export default router;
