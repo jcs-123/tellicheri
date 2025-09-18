@@ -524,33 +524,34 @@ router.get('/priests', async (req, res) => {
     }
 });
 // ✅ Fetch obituary priests first
+// ✅ Fetch obituary priests
 router.get('/priests/obituary', async (req, res) => {
-    try {
-        const { filter } = req.query;
-        const year = 2020;
+  try {
+    const { filter } = req.query;
+    const year = 2020;
 
-        console.log("🔍 Fetching obituary with filter:", filter);
+    console.log("🔍 Fetching obituary with filter:", filter);
 
-        let query = { death_date: { $ne: null } };
+    let query = { death_date: { $ne: null } };
 
-        if (filter === "after") {
-            query.$and = [{ death_date: { $gte: new Date(`${year}-01-01`) } }];
-        } else if (filter === "before") {
-            query.$and = [{ death_date: { $lt: new Date(`${year}-01-01`) } }];
-        }
-
-
-        console.log("👉 Final Mongo Query:", query);
-
-        const priests = await Priest.find(query).sort({ death_date: -1 }).lean();
-
-        console.log("✅ Priests found:", priests.length);
-        res.json({ success: true, count: priests.length, data: priests });
-    } catch (error) {
-        console.error("❌ Error fetching obituary:", error);
-        res.status(500).json({ success: false, message: "Server error while fetching obituary" });
+    if (filter === "after") {
+      query.death_date = { $gte: new Date(`${year}-01-01`) };
+    } else if (filter === "before") {
+      query.death_date = { $lt: new Date(`${year}-01-01`) };
     }
+
+    console.log("👉 Final Mongo Query:", JSON.stringify(query));
+
+    const priests = await Priest.find(query).sort({ death_date: -1 }).lean();
+
+    console.log("✅ Priests found:", priests.length);
+    res.json({ success: true, count: priests.length, data: priests });
+  } catch (error) {
+    console.error("❌ Error fetching obituary:", error);
+    res.status(500).json({ success: false, message: "Server error while fetching obituary" });
+  }
 });
+
 
 // 👇 Place dynamic route after
 router.get('/priests/:id', async (req, res) => {
