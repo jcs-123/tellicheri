@@ -496,4 +496,37 @@ router.post('/priest-others', async (req, res) => {
   }
 });
 
+
+// Fetch all priests
+router.get('/priests', async (req, res) => {
+  try {
+    const { search } = req.query;
+
+    let filter = {};
+    if (search) {
+      filter = {
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { designation: { $regex: search, $options: 'i' } },
+          { current_place: { $regex: search, $options: 'i' } },
+        ],
+      };
+    }
+
+    const priests = await Priest.find(filter).sort({ name: 1 });
+
+    res.json({
+      success: true,
+      count: priests.length,
+      data: priests,
+    });
+  } catch (error) {
+    console.error('Error fetching priests:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching priests',
+    });
+  }
+});
+
 export default router;
