@@ -26,16 +26,6 @@ router.post('/test', (req, res) => {
     });
 });
 
-// GET all foranes
-router.get('/foranes', async (req, res) => {
-  try {
-    const foranes = await Forane.find().sort({ name: 1 });
-    res.json({ success: true, data: foranes });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error while fetching foranes' });
-  }
-});
-
 
 // Import institutions data
 router.post('/institutions', async (req, res) => {
@@ -217,6 +207,18 @@ function cleanAdministrationData(data) {
 
     return cleaned;
 }
+
+
+router.get("/", async (req, res) => {
+  try {
+    const foranes = await Forane.find().sort({ name: 1 });
+    res.json({ success: true, count: foranes.length, data: foranes });
+  } catch (error) {
+    console.error("Error fetching foranes:", error);
+    res.status(500).json({ success: false, message: "Server error while fetching foranes" });
+  }
+});
+
 
 router.post('/foranes', async (req, res) => {
     try {
