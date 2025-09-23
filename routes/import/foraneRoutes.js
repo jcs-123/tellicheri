@@ -4,78 +4,6 @@ import Forane from '../../models/Forane.js';
 const router = express.Router();
 
 
-router.get('/', async (req, res) => {
-  try {
-    const foranes = await Forane.find({})
-      .sort({ name: 1 })
-      .select('-__v -createdAt -updatedAt'); // Exclude unnecessary fields
-
-    res.json({
-      success: true,
-      count: foranes.length,
-      data: foranes
-    });
-  } catch (error) {
-    console.error('Error fetching foranes:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while fetching foranes',
-      error: error.message
-    });
-  }
-});
-
-// Get single forane by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const forane = await Forane.findById(req.params.id);
-    
-    if (!forane) {
-      return res.status(404).json({
-        success: false,
-        message: 'Forane not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: forane
-    });
-  } catch (error) {
-    console.error('Error fetching forane:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while fetching forane'
-    });
-  }
-});
-
-// Search foranes
-router.get('/search/:query', async (req, res) => {
-  try {
-    const query = req.params.query;
-    const foranes = await Forane.find({
-      $or: [
-        { name: { $regex: query, $options: 'i' } },
-        { place: { $regex: query, $options: 'i' } },
-        { description: { $regex: query, $options: 'i' } }
-      ]
-    }).sort({ name: 1 });
-
-    res.json({
-      success: true,
-      count: foranes.length,
-      data: foranes
-    });
-  } catch (error) {
-    console.error('Error searching foranes:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while searching foranes'
-    });
-  }
-});
-
 
 // Import forane data
 router.post('/foranes', async (req, res) => {
@@ -167,5 +95,76 @@ function cleanForaneData(data) {
 
     return cleaned;
 }
+router.get('/', async (req, res) => {
+  try {
+    const foranes = await Forane.find({})
+      .sort({ name: 1 })
+      .select('-__v -createdAt -updatedAt'); // Exclude unnecessary fields
+
+    res.json({
+      success: true,
+      count: foranes.length,
+      data: foranes
+    });
+  } catch (error) {
+    console.error('Error fetching foranes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching foranes',
+      error: error.message
+    });
+  }
+});
+
+// Get single forane by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const forane = await Forane.findById(req.params.id);
+    
+    if (!forane) {
+      return res.status(404).json({
+        success: false,
+        message: 'Forane not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: forane
+    });
+  } catch (error) {
+    console.error('Error fetching forane:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching forane'
+    });
+  }
+});
+
+// Search foranes
+router.get('/search/:query', async (req, res) => {
+  try {
+    const query = req.params.query;
+    const foranes = await Forane.find({
+      $or: [
+        { name: { $regex: query, $options: 'i' } },
+        { place: { $regex: query, $options: 'i' } },
+        { description: { $regex: query, $options: 'i' } }
+      ]
+    }).sort({ name: 1 });
+
+    res.json({
+      success: true,
+      count: foranes.length,
+      data: foranes
+    });
+  } catch (error) {
+    console.error('Error searching foranes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while searching foranes'
+    });
+  }
+});
 
 export default router;
