@@ -26,6 +26,17 @@ router.post('/test', (req, res) => {
     });
 });
 
+// GET all foranes
+router.get('/foranes', async (req, res) => {
+  try {
+    const foranes = await Forane.find().sort({ name: 1 });
+    res.json({ success: true, data: foranes });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error while fetching foranes' });
+  }
+});
+
+
 // Import institutions data
 router.post('/institutions', async (req, res) => {
     try {
