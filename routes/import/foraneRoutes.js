@@ -3,18 +3,6 @@ import Forane from '../../models/Forane.js';
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
-  try {
-    const foranes = await Forane.find().sort({ name: 1 });
-    res.json({ success: true, count: foranes.length, data: foranes });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Server error while fetching foranes",
-    });
-  }
-});
-
 // Import forane data
 router.post('/foranes', async (req, res) => {
     try {
@@ -105,6 +93,5 @@ function cleanForaneData(data) {
 
     return cleaned;
 }
-
 
 export default router;
