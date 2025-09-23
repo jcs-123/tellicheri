@@ -8,10 +8,10 @@ router.get("/", async (req, res) => {
     const foranes = await Forane.find().sort({ name: 1 });
     res.json({ success: true, count: foranes.length, data: foranes });
   } catch (error) {
-    console.error("Error fetching foranes:", error);
     res.status(500).json({ success: false, message: "Server error while fetching foranes" });
   }
 });
+
 
 // Import forane data
 router.post('/foranes', async (req, res) => {
