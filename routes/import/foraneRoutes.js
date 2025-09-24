@@ -1,17 +1,53 @@
 import express from 'express';
 import Forane from '../../models/Forane.js';
+import Parish from "../../models/Parish.js";
+
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
+
+router.get("/", async (req, res) => {
   try {
-    const foranes = await Forane.find().sort({ name: 1 });
-    res.json({ success: true, count: foranes.length, data: foranes });
+    const foranes = await Forane.find().lean();
+
+    // Fetch counts for each forane_name
+    const parishCounts = await Parish.aggregate([
+      {
+        $group: {
+          _id: "$forane_name",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const parishMap = {};
+    parishCounts.forEach((p) => {
+      parishMap[p._id] = p.count;
+    });
+
+    // Attach parish count to each forane
+    const enrichedForanes = foranes.map((f) => ({
+      ...f,
+      parishes: parishMap[f.name] || 0
+    }));
+
+    res.json({ success: true, data: enrichedForanes });
   } catch (error) {
-    console.error("Error fetching foranes:", error);
-    res.status(500).json({ success: false, message: "Server error while fetching foranes" });
+    console.error("Error fetching foranes with parishes:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
+
+// router.get('/', async (req, res) => {
+//   try {
+//     const foranes = await Forane.find().sort({ name: 1 });
+//     res.json({ success: true, count: foranes.length, data: foranes });
+//   } catch (error) {
+//     console.error("Error fetching foranes:", error);
+//     res.status(500).json({ success: false, message: "Server error while fetching foranes" });
+//   }
+// });
 
 // Import forane data
 router.post('/foranes', async (req, res) => {
