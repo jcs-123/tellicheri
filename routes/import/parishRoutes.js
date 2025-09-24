@@ -4,6 +4,23 @@ import Parish from '../../models/Parish.js';
 const router = express.Router();
 
 
+router.get("/", async (req, res) => {
+  try {
+    const parishes = await Parish.find().sort({ name: 1 }); // sorted alphabetically
+    res.json({
+      success: true,
+      count: parishes.length,
+      data: parishes,
+    });
+  } catch (error) {
+    console.error("Error fetching parishes:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching parishes",
+    });
+  }
+});
+
 // Import parishes data
 router.post('/parishes', async (req, res) => {
     try {
