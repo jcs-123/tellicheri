@@ -510,36 +510,62 @@ function cleanPriestData(data) {
 
 // Get all parishes
 router.get('/parishes', async (req, res) => {
-  try {
-    const { search } = req.query;
+    try {
+        const { search } = req.query;
 
-    let filter = {};
-    if (search) {
-      filter = {
-        $or: [
-          { name: { $regex: search, $options: 'i' } },
-          { vicar_name: { $regex: search, $options: 'i' } },
-          { place: { $regex: search, $options: 'i' } },
-          { address: { $regex: search, $options: 'i' } },
-          { forane_name: { $regex: search, $options: 'i' } },
-        ],
-      };
+        let filter = {};
+        if (search) {
+            filter = {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { vicar_name: { $regex: search, $options: 'i' } },
+                    { place: { $regex: search, $options: 'i' } },
+                    { address: { $regex: search, $options: 'i' } },
+                    { forane_name: { $regex: search, $options: 'i' } },
+                ],
+            };
+        }
+
+        const parishes = await Parish.find(filter)
+            .sort({ name: 1 })
+            .select('name place vicar_name forane_name address phone mobile no_families total_population');
+
+        res.json({
+            success: true,
+            count: parishes.length,
+            data: parishes,
+        });
+    } catch (error) {
+        console.error('Error fetching parishes:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching parishes',
+        });
     }
+});
 
-    const parishes = await Parish.find(filter)
-      .sort({ name: 1 })
-      .select('name place vicar_name forane_name address phone mobile no_families total_population');
+// Add this to your import.js backend routes
+// Get single parish by ID
+router.get('/parishes/:id', async (req, res) => {
+  try {
+    const parish = await Parish.findById(req.params.id);
+    
+    if (!parish) {
+      return res.status(404).json({
+        success: false,
+        message: 'Parish not found'
+      });
+    }
 
     res.json({
       success: true,
-      count: parishes.length,
-      data: parishes,
+      data: parish
     });
   } catch (error) {
-    console.error('Error fetching parishes:', error);
+    console.error('Error fetching parish:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching parishes',
+      message: 'Server error while fetching parish'
     });
   }
 });
