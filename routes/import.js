@@ -542,7 +542,6 @@ router.get('/parishes', async (req, res) => {
     });
   }
 });
-
 // Import parishes data
 router.post('/parishes', async (req, res) => {
     try {
