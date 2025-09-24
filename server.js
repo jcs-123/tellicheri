@@ -19,7 +19,7 @@ import galleryRoutes from './routes/galleryRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import logRoutes from './routes/logRoutes.js';
 import statisticsRoutes from './routes/statistics.js';
-import importRoutes from './routes/import/index.js';
+import importRoutes from './routes/import.js';
 
 dotenv.config();
 
