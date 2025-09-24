@@ -206,7 +206,37 @@ function cleanAdministrationData(data) {
 
     return cleaned;
 }
+// Get all foranes
+router.get('/foranes', async (req, res) => {
+    try {
+        const { search } = req.query;
 
+        let filter = {};
+        if (search) {
+            filter = {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { place: { $regex: search, $options: 'i' } },
+                    { vicar: { $regex: search, $options: 'i' } },
+                ],
+            };
+        }
+
+        const foranes = await Forane.find(filter).sort({ name: 1 });
+
+        res.json({
+            success: true,
+            count: foranes.length,
+            data: foranes,
+        });
+    } catch (error) {
+        console.error('Error fetching foranes:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching foranes',
+        });
+    }
+});
 router.post('/foranes', async (req, res) => {
     try {
         const foraneData = req.body;
