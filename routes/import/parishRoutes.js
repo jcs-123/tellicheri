@@ -6,18 +6,10 @@ const router = express.Router();
 
 router.get("/", async (req, res) => {
   try {
-    const parishes = await Parish.find().sort({ name: 1 }); // sorted alphabetically
-    res.json({
-      success: true,
-      count: parishes.length,
-      data: parishes,
-    });
+    const parishes = await Parish.find().sort({ name: 1 });
+    res.json({ success: true, count: parishes.length, data: parishes });
   } catch (error) {
-    console.error("Error fetching parishes:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error while fetching parishes",
-    });
+    res.status(500).json({ success: false, message: "Error fetching parishes" });
   }
 });
 
