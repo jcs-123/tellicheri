@@ -507,7 +507,42 @@ function cleanPriestData(data) {
 }
 
 
+// Updated parishes route in your backend
+router.get('/parishes', async (req, res) => {
+  try {
+    const { search } = req.query;
 
+    let filter = {};
+    if (search) {
+      filter = {
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { vicar_name: { $regex: search, $options: 'i' } },
+          { place: { $regex: search, $options: 'i' } },
+          { address: { $regex: search, $options: 'i' } },
+          { forane_name: { $regex: search, $options: 'i' } },
+          { patron_name: { $regex: search, $options: 'i' } }
+        ],
+      };
+    }
+
+    const parishes = await Parish.find(filter)
+      .sort({ name: 1 })
+      .select('name place vicar_name forane_name address phone mobile parish_coordinators patron_name grade estb_date no_families total_population resident_vicar_names');
+
+    res.json({
+      success: true,
+      count: parishes.length,
+      data: parishes,
+    });
+  } catch (error) {
+    console.error('Error fetching parishes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching parishes',
+    });
+  }
+});
 // Import parishes data
 router.post('/parishes', async (req, res) => {
     try {
