@@ -26,7 +26,7 @@ router.post('/test', (req, res) => {
   });
 });
 
-// ✅ Mount route modules
+// ✅ Mount all route modules with proper paths
 router.use('/parishes', parishRoutes);
 router.use('/priests', priestRoutes);
 router.use('/priest-others', priestOthersRoutes);
