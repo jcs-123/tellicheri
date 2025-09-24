@@ -507,7 +507,6 @@ function cleanPriestData(data) {
 }
 
 
-// Updated parishes route in your backend
 router.get('/parishes', async (req, res) => {
   try {
     const { search } = req.query;
@@ -543,6 +542,7 @@ router.get('/parishes', async (req, res) => {
     });
   }
 });
+
 // Import parishes data
 router.post('/parishes', async (req, res) => {
     try {
