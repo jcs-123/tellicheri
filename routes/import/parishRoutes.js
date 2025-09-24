@@ -6,17 +6,20 @@ const router = express.Router();
 
 // ✅ GET /api/parishes
 router.get("/", async (req, res) => {
+  console.log("📥 GET /api/parishes hit");   // <-- Debug log
   try {
     const parishes = await Parish.find().sort({ name: 1 });
+    console.log(`📊 Found ${parishes.length} parishes`);
     res.json({ success: true, count: parishes.length, data: parishes });
   } catch (error) {
-    console.error("Error fetching parishes:", error);
+    console.error("❌ Error fetching parishes:", error);
     res.status(500).json({ success: false, message: "Error fetching parishes" });
   }
 });
 
 // ✅ POST /api/parishes (import)
 router.post("/", async (req, res) => {
+  console.log("📥 POST /api/parishes hit with", req.body.length, "records");
   try {
     const parishesData = req.body;
 
@@ -37,14 +40,16 @@ router.post("/", async (req, res) => {
         });
 
         if (existingParish) {
+          console.log(`🔄 Updating parish ${parish.name}`);
           await Parish.findByIdAndUpdate(existingParish._id, parish);
         } else {
+          console.log(`➕ Creating parish ${parish.name}`);
           await Parish.create(parish);
         }
 
         importedCount++;
       } catch (error) {
-        console.error(`Error processing parish ${parish.id}:`, error);
+        console.error(`❌ Error processing parish ${parish.id}:`, error);
         errors.push({ id: parish.id, error: error.message });
       }
     }
@@ -55,7 +60,7 @@ router.post("/", async (req, res) => {
       errors,
     });
   } catch (error) {
-    console.error("Import error:", error);
+    console.error("❌ Import error:", error);
     res.status(500).json({
       success: false,
       message: "Server error during import",
