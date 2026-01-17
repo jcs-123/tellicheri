@@ -833,8 +833,7 @@ function cleanPriestData(data) {
 // Get all parishes
 router.get('/parishes', async (req, res) => {
     try {
-        const { search, page = 1, limit = 50 } = req.query;
-        const skip = (page - 1) * limit;
+        const { search } = req.query;
 
         let filter = {};
         if (search) {
@@ -849,21 +848,15 @@ router.get('/parishes', async (req, res) => {
             };
         }
 
-        const [parishes, total] = await Promise.all([
-            Parish.find(filter)
-                .skip(skip)
-                .limit(parseInt(limit))
-                .sort({ name: 1 }),
-            Parish.countDocuments(filter)
-        ]);
+        const parishes = await Parish.find(filter)
+            .sort({ name: 1 });
 
         res.json({
             success: true,
-            count: total,
-            data: parishes,
-            page: parseInt(page),
-            totalPages: Math.ceil(total / limit)
+            count: parishes.length,
+            data: parishes
         });
+
     } catch (error) {
         console.error('Error fetching parishes:', error);
         res.status(500).json({
@@ -872,6 +865,7 @@ router.get('/parishes', async (req, res) => {
         });
     }
 });
+
 
 // Get single parish by ID
 router.get('/parishes/:id', async (req, res) => {
@@ -904,124 +898,124 @@ router.get('/parishes/:id', async (req, res) => {
 });
 
 router.post('/parishes', async (req, res) => {
-  try {
-    const parishes = req.body;
+    try {
+        const parishes = req.body;
 
-    if (!Array.isArray(parishes)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Expected array of parishes'
-      });
-    }
-
-    let inserted = 0;
-    let updated = 0;
-    let errors = [];
-
-    for (const p of parishes) {
-      try {
-        const {
-          id,
-          archival_code,
-          name,
-          place,
-          patron_name,
-          parish_type,
-          shrine,
-          forane_name,
-          parish_coordinators,
-          address,
-          phone,
-          mobile,
-          whatsapp_number,
-          pan_card_num,
-          grade,
-          email,
-          website,
-          status,
-          vicar_name,
-          asst_vicar_names,
-          resident_vicar_names,
-
-          // 🔥 everything else
-          ...extra_data
-        } = p;
-
-        const payload = {
-          id,
-          archival_code,
-          name,
-          place,
-          patron_name,
-          parish_type,
-          shrine,
-          forane_name,
-          parish_coordinators,
-          address,
-          phone,
-          mobile,
-          whatsapp_number,
-          pan_card_num,
-          grade,
-          email,
-          website,
-          status,
-          vicar_name,
-          asst_vicar_names,
-          resident_vicar_names,
-
-          // ✅ proper type conversion
-          area: Number(p.area) || 0,
-          no_family_units: Number(p.no_family_units) || 0,
-          no_families: Number(p.no_families) || 0,
-          total_population: Number(p.total_population) || 0,
-          latitude: Number(p.latitude) || null,
-          longitude: Number(p.longitude) || null,
-          estb_date: p.estb_date ? new Date(`${p.estb_date}-01-01`) : null,
-
-          extra_data
-        };
-
-        const existing = await Parish.findOne({
-          $or: [{ id }, { archival_code }]
-        });
-
-        if (existing) {
-          await Parish.updateOne(
-            { _id: existing._id },
-            { $set: payload }
-          );
-          updated++;
-        } else {
-          await Parish.create(payload);
-          inserted++;
+        if (!Array.isArray(parishes)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Expected array of parishes'
+            });
         }
 
-      } catch (err) {
-        errors.push({
-          id: p.id,
-          name: p.name,
-          error: err.message
+        let inserted = 0;
+        let updated = 0;
+        let errors = [];
+
+        for (const p of parishes) {
+            try {
+                const {
+                    id,
+                    archival_code,
+                    name,
+                    place,
+                    patron_name,
+                    parish_type,
+                    shrine,
+                    forane_name,
+                    parish_coordinators,
+                    address,
+                    phone,
+                    mobile,
+                    whatsapp_number,
+                    pan_card_num,
+                    grade,
+                    email,
+                    website,
+                    status,
+                    vicar_name,
+                    asst_vicar_names,
+                    resident_vicar_names,
+
+                    // 🔥 everything else
+                    ...extra_data
+                } = p;
+
+                const payload = {
+                    id,
+                    archival_code,
+                    name,
+                    place,
+                    patron_name,
+                    parish_type,
+                    shrine,
+                    forane_name,
+                    parish_coordinators,
+                    address,
+                    phone,
+                    mobile,
+                    whatsapp_number,
+                    pan_card_num,
+                    grade,
+                    email,
+                    website,
+                    status,
+                    vicar_name,
+                    asst_vicar_names,
+                    resident_vicar_names,
+
+                    // ✅ proper type conversion
+                    area: Number(p.area) || 0,
+                    no_family_units: Number(p.no_family_units) || 0,
+                    no_families: Number(p.no_families) || 0,
+                    total_population: Number(p.total_population) || 0,
+                    latitude: Number(p.latitude) || null,
+                    longitude: Number(p.longitude) || null,
+                    estb_date: p.estb_date ? new Date(`${p.estb_date}-01-01`) : null,
+
+                    extra_data
+                };
+
+                const existing = await Parish.findOne({
+                    $or: [{ id }, { archival_code }]
+                });
+
+                if (existing) {
+                    await Parish.updateOne(
+                        { _id: existing._id },
+                        { $set: payload }
+                    );
+                    updated++;
+                } else {
+                    await Parish.create(payload);
+                    inserted++;
+                }
+
+            } catch (err) {
+                errors.push({
+                    id: p.id,
+                    name: p.name,
+                    error: err.message
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            received: parishes.length,
+            inserted,
+            updated,
+            errors: errors.length,
+            error_samples: errors.slice(0, 5)
         });
-      }
+
+    } catch (error) {
+        console.error('❌ Parish import failed:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during parish import'
+        });
     }
-
-    res.json({
-      success: true,
-      received: parishes.length,
-      inserted,
-      updated,
-      errors: errors.length,
-      error_samples: errors.slice(0, 5)
-    });
-
-  } catch (error) {
-    console.error('❌ Parish import failed:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error during parish import'
-    });
-  }
 });
 
 
