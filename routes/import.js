@@ -3,8 +3,14 @@ import Parish from '../models/Parish.js';
 import Priest from '../models/Priest.js';
 import PriestOthers from '../models/Priestothers.js';
 import Administration from '../models/Administration.js';
-import Institution from '../models/Institution.js'; // Import the new model
-import Forane from '../models/Forane.js'; // Import Forane model
+import Institution from '../models/Institution.js';
+import Forane from '../models/Forane.js';
+import PriestSubStatus from '../models/PriestSubStatus.js';
+import PriestStatus from '../models/PriestStatus.js';
+import PriestSecondarySubStatus from '../models/PriestSecondarySubStatus.js';
+import PriestHistory from '../models/PriestHistory.js';
+import PriestEducation from '../models/PriestEducation.js';
+import PriestDesignation from '../models/PriestDesignation.js';
 
 const router = express.Router();
 
@@ -26,6 +32,78 @@ router.post('/test', (req, res) => {
     });
 });
 
+// ==================== INSTITUTIONS ====================
+// Get all institutions
+router.get('/institutions', async (req, res) => {
+    try {
+        const { search, page = 1, limit = 50 } = req.query;
+        const skip = (page - 1) * limit;
+
+        let filter = {};
+        if (search) {
+            filter = {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { place: { $regex: search, $options: 'i' } },
+                    { web_institution_type_id: { $regex: search, $options: 'i' } },
+                ],
+            };
+        }
+
+        const [institutions, total] = await Promise.all([
+            Institution.find(filter)
+                .skip(skip)
+                .limit(parseInt(limit))
+                .sort({ name: 1 }),
+            Institution.countDocuments(filter)
+        ]);
+
+        res.json({
+            success: true,
+            count: total,
+            data: institutions,
+            page: parseInt(page),
+            totalPages: Math.ceil(total / limit)
+        });
+    } catch (error) {
+        console.error('Error fetching institutions:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching institutions'
+        });
+    }
+});
+
+// Get single institution by ID
+router.get('/institutions/:id', async (req, res) => {
+    try {
+        const institution = await Institution.findOne({
+            $or: [
+                { _id: req.params.id },
+                { id: req.params.id }
+            ]
+        });
+
+        if (!institution) {
+            return res.status(404).json({
+                success: false,
+                message: 'Institution not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: institution
+        });
+    } catch (error) {
+        console.error('Error fetching institution:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching institution'
+        });
+    }
+});
+
 // Import institutions data
 router.post('/institutions', async (req, res) => {
     try {
@@ -44,10 +122,7 @@ router.post('/institutions', async (req, res) => {
 
         for (const institutionData of institutionsData) {
             try {
-                // Clean and format the data
                 const cleanedData = cleanInstitutionData(institutionData);
-
-                // Check if institution already exists
                 const existingInstitution = await Institution.findOne({
                     $or: [
                         { id: cleanedData.id },
@@ -60,11 +135,9 @@ router.post('/institutions', async (req, res) => {
                 });
 
                 if (existingInstitution) {
-                    // Update existing institution
                     await Institution.findByIdAndUpdate(existingInstitution._id, cleanedData);
                     updatedCount++;
                 } else {
-                    // Insert new institution
                     await Institution.create(cleanedData);
                     importedCount++;
                 }
@@ -95,26 +168,93 @@ router.post('/institutions', async (req, res) => {
     }
 });
 
-// Helper function to clean and format institution data
 function cleanInstitutionData(data) {
     const cleaned = { ...data };
-
-    // Convert estd to Date object if available
     if (cleaned.estd && cleaned.estd !== '') {
         cleaned.estd = new Date(cleaned.estd);
     } else {
         cleaned.estd = null;
     }
-
-    // Handle empty strings for better data consistency
     Object.keys(cleaned).forEach(key => {
         if (cleaned[key] === '') {
             cleaned[key] = null;
         }
     });
-
     return cleaned;
 }
+
+// ==================== ADMINISTRATION ====================
+// Get all administration records
+router.get('/administration', async (req, res) => {
+    try {
+        const { search, page = 1, limit = 50 } = req.query;
+        const skip = (page - 1) * limit;
+
+        let filter = {};
+        if (search) {
+            filter = {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { section: { $regex: search, $options: 'i' } },
+                    { category: { $regex: search, $options: 'i' } },
+                    { head_id: { $regex: search, $options: 'i' } },
+                ],
+            };
+        }
+
+        const [administration, total] = await Promise.all([
+            Administration.find(filter)
+                .skip(skip)
+                .limit(parseInt(limit))
+                .sort({ display_order: 1 }),
+            Administration.countDocuments(filter)
+        ]);
+
+        res.json({
+            success: true,
+            count: total,
+            data: administration,
+            page: parseInt(page),
+            totalPages: Math.ceil(total / limit)
+        });
+    } catch (error) {
+        console.error('Error fetching administration:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching administration'
+        });
+    }
+});
+
+// Get single administration by ID
+router.get('/administration/:id', async (req, res) => {
+    try {
+        const admin = await Administration.findOne({
+            $or: [
+                { _id: req.params.id },
+                { id: req.params.id }
+            ]
+        });
+
+        if (!admin) {
+            return res.status(404).json({
+                success: false,
+                message: 'Administration record not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: admin
+        });
+    } catch (error) {
+        console.error('Error fetching administration:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching administration'
+        });
+    }
+});
 
 // Import administration data
 router.post('/administration', async (req, res) => {
@@ -134,10 +274,7 @@ router.post('/administration', async (req, res) => {
 
         for (const adminData of administrationData) {
             try {
-                // Clean and format the data
                 const cleanedData = cleanAdministrationData(adminData);
-
-                // Check if administration record already exists
                 const existingAdmin = await Administration.findOne({
                     $or: [
                         { id: cleanedData.id },
@@ -151,11 +288,9 @@ router.post('/administration', async (req, res) => {
                 });
 
                 if (existingAdmin) {
-                    // Update existing administration record
                     await Administration.findByIdAndUpdate(existingAdmin._id, cleanedData);
                     updatedCount++;
                 } else {
-                    // Insert new administration record
                     await Administration.create(cleanedData);
                     importedCount++;
                 }
@@ -186,30 +321,27 @@ router.post('/administration', async (req, res) => {
     }
 });
 
-// Helper function to clean and format administration data
 function cleanAdministrationData(data) {
     const cleaned = { ...data };
-
-    // Convert display_order to number
     if (cleaned.display_order) {
         cleaned.display_order = parseInt(cleaned.display_order) || 0;
     } else {
         cleaned.display_order = 0;
     }
-
-    // Handle empty strings for better data consistency
     Object.keys(cleaned).forEach(key => {
         if (cleaned[key] === '') {
             cleaned[key] = null;
         }
     });
-
     return cleaned;
 }
+
+// ==================== FORANES ====================
 // Get all foranes
 router.get('/foranes', async (req, res) => {
     try {
-        const { search } = req.query;
+        const { search, page = 1, limit = 50 } = req.query;
+        const skip = (page - 1) * limit;
 
         let filter = {};
         if (search) {
@@ -222,12 +354,20 @@ router.get('/foranes', async (req, res) => {
             };
         }
 
-        const foranes = await Forane.find(filter).sort({ name: 1 });
+        const [foranes, total] = await Promise.all([
+            Forane.find(filter)
+                .skip(skip)
+                .limit(parseInt(limit))
+                .sort({ name: 1 }),
+            Forane.countDocuments(filter)
+        ]);
 
         res.json({
             success: true,
-            count: foranes.length,
+            count: total,
             data: foranes,
+            page: parseInt(page),
+            totalPages: Math.ceil(total / limit)
         });
     } catch (error) {
         console.error('Error fetching foranes:', error);
@@ -237,6 +377,37 @@ router.get('/foranes', async (req, res) => {
         });
     }
 });
+
+// Get single forane by ID
+router.get('/foranes/:id', async (req, res) => {
+    try {
+        const forane = await Forane.findOne({
+            $or: [
+                { _id: req.params.id },
+                { id: req.params.id }
+            ]
+        });
+
+        if (!forane) {
+            return res.status(404).json({
+                success: false,
+                message: 'Forane not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: forane
+        });
+    } catch (error) {
+        console.error('Error fetching forane:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching forane'
+        });
+    }
+});
+
 router.post('/foranes', async (req, res) => {
     try {
         const foraneData = req.body;
@@ -254,10 +425,7 @@ router.post('/foranes', async (req, res) => {
 
         for (const foraneItem of foraneData) {
             try {
-                // Clean and format the data
                 const cleanedData = cleanForaneData(foraneItem);
-
-                // Check if forane already exists
                 const existingForane = await Forane.findOne({
                     $or: [
                         { id: cleanedData.id },
@@ -267,11 +435,9 @@ router.post('/foranes', async (req, res) => {
                 });
 
                 if (existingForane) {
-                    // Update existing forane
                     await Forane.findByIdAndUpdate(existingForane._id, cleanedData);
                     updatedCount++;
                 } else {
-                    // Insert new forane
                     await Forane.create(cleanedData);
                     importedCount++;
                 }
@@ -302,13 +468,9 @@ router.post('/foranes', async (req, res) => {
     }
 });
 
-// Helper function to clean and format forane data
 function cleanForaneData(data) {
     const cleaned = { ...data };
-
-    // Convert date strings to Date objects
     const dateFields = ['inserted_date', 'updated_date'];
-
     dateFields.forEach(field => {
         if (cleaned[field] && cleaned[field] !== '0000-00-00 00:00:00' && cleaned[field] !== '') {
             cleaned[field] = new Date(cleaned[field]);
@@ -316,17 +478,86 @@ function cleanForaneData(data) {
             cleaned[field] = null;
         }
     });
-
-    // Handle empty strings for better data consistency
     Object.keys(cleaned).forEach(key => {
         if (cleaned[key] === '' || cleaned[key] === '0000-00-00 00:00:00') {
             cleaned[key] = null;
         }
     });
-
     return cleaned;
 }
-// Import priest others data with proper date handling
+
+// ==================== PRIEST OTHERS ====================
+// Get all priest others
+router.get('/priest-others', async (req, res) => {
+    try {
+        const { search, page = 1, limit = 50 } = req.query;
+        const skip = (page - 1) * limit;
+
+        let filter = {};
+        if (search) {
+            filter = {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { designation: { $regex: search, $options: 'i' } },
+                    { mobile: { $regex: search, $options: 'i' } },
+                ],
+            };
+        }
+
+        const [priestOthers, total] = await Promise.all([
+            PriestOthers.find(filter)
+                .skip(skip)
+                .limit(parseInt(limit))
+                .sort({ name: 1 }),
+            PriestOthers.countDocuments(filter)
+        ]);
+
+        res.json({
+            success: true,
+            count: total,
+            data: priestOthers,
+            page: parseInt(page),
+            totalPages: Math.ceil(total / limit)
+        });
+    } catch (error) {
+        console.error('Error fetching priest others:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest others'
+        });
+    }
+});
+
+// Get single priest other by ID
+router.get('/priest-others/:id', async (req, res) => {
+    try {
+        const priestOther = await PriestOthers.findOne({
+            $or: [
+                { _id: req.params.id },
+                { id: req.params.id }
+            ]
+        });
+
+        if (!priestOther) {
+            return res.status(404).json({
+                success: false,
+                message: 'Priest other not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: priestOther
+        });
+    } catch (error) {
+        console.error('Error fetching priest other:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest other'
+        });
+    }
+});
+
 router.post('/priest-others', async (req, res) => {
     try {
         const priestOthersData = req.body;
@@ -344,10 +575,7 @@ router.post('/priest-others', async (req, res) => {
 
         for (const priestOtherData of priestOthersData) {
             try {
-                // Clean and format the data
                 const cleanedData = cleanPriestOtherData(priestOtherData);
-
-                // Check if priest other already exists
                 const existingPriestOther = await PriestOthers.findOne({
                     $or: [
                         { id: cleanedData.id },
@@ -357,11 +585,9 @@ router.post('/priest-others', async (req, res) => {
                 });
 
                 if (existingPriestOther) {
-                    // Update existing priest other
                     await PriestOthers.findByIdAndUpdate(existingPriestOther._id, cleanedData);
                     updatedCount++;
                 } else {
-                    // Insert new priest other
                     await PriestOthers.create(cleanedData);
                     importedCount++;
                 }
@@ -392,15 +618,11 @@ router.post('/priest-others', async (req, res) => {
     }
 });
 
-// Helper function to clean and format priest other data
 function cleanPriestOtherData(data) {
     const cleaned = { ...data };
-
-    // Convert date strings to Date objects
     const dateFields = [
         'ordination_date', 'dob', 'feast_date', 'date_profession', 'death_date'
     ];
-
     dateFields.forEach(field => {
         if (cleaned[field] && cleaned[field] !== '0000-00-00' && cleaned[field] !== '') {
             cleaned[field] = new Date(cleaned[field]);
@@ -408,18 +630,128 @@ function cleanPriestOtherData(data) {
             cleaned[field] = null;
         }
     });
-
-    // Handle empty strings for better data consistency
     Object.keys(cleaned).forEach(key => {
         if (cleaned[key] === '' || cleaned[key] === '0000-00-00') {
             cleaned[key] = null;
         }
     });
-
     return cleaned;
 }
 
-// Import priests data with proper date handling
+// ==================== PRIESTS ====================
+// Get all priests
+router.get('/priests', async (req, res) => {
+    try {
+        const { search, page = 1, limit = 50 } = req.query;
+        const skip = (page - 1) * limit;
+
+        let filter = {};
+        if (search) {
+            filter = {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { designation: { $regex: search, $options: 'i' } },
+                    { current_place: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } },
+                    { mobile: { $regex: search, $options: 'i' } },
+                ],
+            };
+        }
+
+        const [priests, total] = await Promise.all([
+            Priest.find(filter)
+                .skip(skip)
+                .limit(parseInt(limit))
+                .sort({ name: 1 }),
+            Priest.countDocuments(filter)
+        ]);
+
+        res.json({
+            success: true,
+            count: total,
+            data: priests,
+            page: parseInt(page),
+            totalPages: Math.ceil(total / limit)
+        });
+    } catch (error) {
+        console.error('Error fetching priests:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priests',
+        });
+    }
+});
+
+// Get single priest by ID
+router.get('/priests/:id', async (req, res) => {
+    try {
+        const priest = await Priest.findOne({
+            $or: [
+                { _id: req.params.id },
+                { id: req.params.id }
+            ]
+        });
+
+        if (!priest) {
+            return res.status(404).json({
+                success: false,
+                message: 'Priest not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: priest
+        });
+    } catch (error) {
+        console.error('Error fetching priest:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest'
+        });
+    }
+});
+// ==================== PRIEST DETAIL (WITH SERVICE HISTORY) ====================
+router.get('/priests/:id', async (req, res) => {
+    try {
+        const priest = await Priest.findOne({
+            $or: [
+                { _id: req.params.id },
+                { id: req.params.id }
+            ]
+        }).lean();
+
+        if (!priest) {
+            return res.status(404).json({
+                success: false,
+                message: 'Priest not found'
+            });
+        }
+
+        // 🔥 Fetch service history
+        const serviceHistory = await PriestHistory.find({
+            priest_id: priest.id || priest._id.toString()
+        })
+            .sort({ start_date: -1 })
+            .lean();
+
+        res.json({
+            success: true,
+            data: {
+                ...priest,
+                serviceHistory
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching priest detail:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest detail'
+        });
+    }
+});
+
 router.post('/priests', async (req, res) => {
     try {
         const priestsData = req.body;
@@ -437,10 +769,7 @@ router.post('/priests', async (req, res) => {
 
         for (const priestData of priestsData) {
             try {
-                // Clean and format the data
                 const cleanedData = cleanPriestData(priestData);
-
-                // Check if priest already exists
                 const existingPriest = await Priest.findOne({
                     $or: [
                         { id: cleanedData.id },
@@ -450,11 +779,9 @@ router.post('/priests', async (req, res) => {
                 });
 
                 if (existingPriest) {
-                    // Update existing priest
                     await Priest.findByIdAndUpdate(existingPriest._id, cleanedData);
                     updatedCount++;
                 } else {
-                    // Insert new priest
                     await Priest.create(cleanedData);
                     importedCount++;
                 }
@@ -485,15 +812,12 @@ router.post('/priests', async (req, res) => {
     }
 });
 
-// Helper function to clean and format priest data
 function cleanPriestData(data) {
     const cleaned = { ...data };
-
     const dateFields = [
         'baptism_date', 'dob', 'join_seminary',
         'ordination_date', 'profession_date', 'death_date'
     ];
-
     dateFields.forEach(field => {
         if (cleaned[field] && cleaned[field] !== '0000-00-00' && cleaned[field] !== '') {
             const parsedDate = new Date(cleaned[field]);
@@ -502,16 +826,15 @@ function cleanPriestData(data) {
             cleaned[field] = null;
         }
     });
-
     return cleaned;
 }
 
-// Add this to your import.js file after the existing routes
-
+// ==================== PARISHES ====================
 // Get all parishes
 router.get('/parishes', async (req, res) => {
     try {
-        const { search } = req.query;
+        const { search, page = 1, limit = 50 } = req.query;
+        const skip = (page - 1) * limit;
 
         let filter = {};
         if (search) {
@@ -526,14 +849,20 @@ router.get('/parishes', async (req, res) => {
             };
         }
 
-        const parishes = await Parish.find(filter)
-            .sort({ name: 1 })
-            .select('name place vicar_name forane_name address phone mobile no_families total_population');
+        const [parishes, total] = await Promise.all([
+            Parish.find(filter)
+                .skip(skip)
+                .limit(parseInt(limit))
+                .sort({ name: 1 }),
+            Parish.countDocuments(filter)
+        ]);
 
         res.json({
             success: true,
-            count: parishes.length,
+            count: total,
             data: parishes,
+            page: parseInt(page),
+            totalPages: Math.ceil(total / limit)
         });
     } catch (error) {
         console.error('Error fetching parishes:', error);
@@ -544,88 +873,230 @@ router.get('/parishes', async (req, res) => {
     }
 });
 
-// Add this to your import.js backend routes
 // Get single parish by ID
 router.get('/parishes/:id', async (req, res) => {
-  try {
-    const parish = await Parish.findById(req.params.id);
-    
-    if (!parish) {
-      return res.status(404).json({
-        success: false,
-        message: 'Parish not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: parish
-    });
-  } catch (error) {
-    console.error('Error fetching parish:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while fetching parish'
-    });
-  }
-});
-
-// Import parishes data
-router.post('/parishes', async (req, res) => {
     try {
-        const parishesData = req.body;
+        const parish = await Parish.findOne({
+            $or: [
+                { _id: req.params.id },
+                { id: req.params.id }
+            ]
+        });
 
-        // Validate that we received an array
-        if (!Array.isArray(parishesData)) {
-            return res.status(400).json({
+        if (!parish) {
+            return res.status(404).json({
                 success: false,
-                message: 'Invalid data format. Expected an array of parishes.'
+                message: 'Parish not found'
             });
-        }
-
-        // Process each parish
-        let importedCount = 0;
-        let errors = [];
-
-        for (const parish of parishesData) {
-            try {
-                // Check if parish already exists
-                const existingParish = await Parish.findOne({
-                    $or: [{ id: parish.id }, { archival_code: parish.archival_code }]
-                });
-
-                if (existingParish) {
-                    // Update existing parish
-                    await Parish.findByIdAndUpdate(existingParish._id, parish);
-                } else {
-                    // Insert new parish
-                    await Parish.create(parish);
-                }
-
-                importedCount++;
-            } catch (error) {
-                console.error(`Error processing parish ${parish.id}:`, error);
-                errors.push({ id: parish.id, error: error.message });
-            }
         }
 
         res.json({
             success: true,
-            message: `Imported ${importedCount} parishes successfully. ${errors.length} errors occurred.`,
-            errors: errors
+            data: parish
         });
-
     } catch (error) {
-        console.error('Import error:', error);
+        console.error('Error fetching parish:', error);
         res.status(500).json({
             success: false,
-            message: 'Server error during import'
+            message: 'Server error while fetching parish'
         });
     }
 });
 
-// Import priest status data
-router.post('/priest-others', async (req, res) => {
+router.post('/parishes', async (req, res) => {
+  try {
+    const parishes = req.body;
+
+    if (!Array.isArray(parishes)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Expected array of parishes'
+      });
+    }
+
+    let inserted = 0;
+    let updated = 0;
+    let errors = [];
+
+    for (const p of parishes) {
+      try {
+        const {
+          id,
+          archival_code,
+          name,
+          place,
+          patron_name,
+          parish_type,
+          shrine,
+          forane_name,
+          parish_coordinators,
+          address,
+          phone,
+          mobile,
+          whatsapp_number,
+          pan_card_num,
+          grade,
+          email,
+          website,
+          status,
+          vicar_name,
+          asst_vicar_names,
+          resident_vicar_names,
+
+          // 🔥 everything else
+          ...extra_data
+        } = p;
+
+        const payload = {
+          id,
+          archival_code,
+          name,
+          place,
+          patron_name,
+          parish_type,
+          shrine,
+          forane_name,
+          parish_coordinators,
+          address,
+          phone,
+          mobile,
+          whatsapp_number,
+          pan_card_num,
+          grade,
+          email,
+          website,
+          status,
+          vicar_name,
+          asst_vicar_names,
+          resident_vicar_names,
+
+          // ✅ proper type conversion
+          area: Number(p.area) || 0,
+          no_family_units: Number(p.no_family_units) || 0,
+          no_families: Number(p.no_families) || 0,
+          total_population: Number(p.total_population) || 0,
+          latitude: Number(p.latitude) || null,
+          longitude: Number(p.longitude) || null,
+          estb_date: p.estb_date ? new Date(`${p.estb_date}-01-01`) : null,
+
+          extra_data
+        };
+
+        const existing = await Parish.findOne({
+          $or: [{ id }, { archival_code }]
+        });
+
+        if (existing) {
+          await Parish.updateOne(
+            { _id: existing._id },
+            { $set: payload }
+          );
+          updated++;
+        } else {
+          await Parish.create(payload);
+          inserted++;
+        }
+
+      } catch (err) {
+        errors.push({
+          id: p.id,
+          name: p.name,
+          error: err.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      received: parishes.length,
+      inserted,
+      updated,
+      errors: errors.length,
+      error_samples: errors.slice(0, 5)
+    });
+
+  } catch (error) {
+    console.error('❌ Parish import failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during parish import'
+    });
+  }
+});
+
+
+// ==================== PRIEST STATUS ====================
+// Get all priest statuses
+router.get('/priest-status', async (req, res) => {
+    try {
+        const { search, page = 1, limit = 50 } = req.query;
+        const skip = (page - 1) * limit;
+
+        let filter = {};
+        if (search) {
+            filter = {
+                $or: [
+                    { pstatus: { $regex: search, $options: 'i' } },
+                    { id: { $regex: search, $options: 'i' } },
+                ],
+            };
+        }
+
+        const [statuses, total] = await Promise.all([
+            PriestStatus.find(filter)
+                .skip(skip)
+                .limit(parseInt(limit))
+                .sort({ display_order: 1, pstatus: 1 }),
+            PriestStatus.countDocuments(filter)
+        ]);
+
+        res.json({
+            success: true,
+            count: total,
+            data: statuses,
+            page: parseInt(page),
+            totalPages: Math.ceil(total / limit)
+        });
+    } catch (error) {
+        console.error('Error fetching priest statuses:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest statuses'
+        });
+    }
+});
+
+// Get single priest status by ID
+router.get('/priest-status/:id', async (req, res) => {
+    try {
+        const status = await PriestStatus.findOne({
+            $or: [
+                { _id: req.params.id },
+                { id: req.params.id }
+            ]
+        });
+
+        if (!status) {
+            return res.status(404).json({
+                success: false,
+                message: 'Priest status not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: status
+        });
+    } catch (error) {
+        console.error('Error fetching priest status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest status'
+        });
+    }
+});
+
+router.post('/priest-status', async (req, res) => {
     try {
         const statusData = req.body;
 
@@ -637,30 +1108,41 @@ router.post('/priest-others', async (req, res) => {
         }
 
         let importedCount = 0;
+        let updatedCount = 0;
         let errors = [];
 
         for (const item of statusData) {
             try {
+                const cleanedData = cleanStatusData(item);
                 const existingStatus = await PriestStatus.findOne({
-                    $or: [{ id: item.id }, { name: item.name }]
+                    $or: [
+                        { id: cleanedData.id },
+                        { pstatus: cleanedData.pstatus }
+                    ]
                 });
 
                 if (existingStatus) {
-                    await PriestStatus.findByIdAndUpdate(existingStatus._id, item);
+                    await PriestStatus.findByIdAndUpdate(existingStatus._id, cleanedData);
+                    updatedCount++;
                 } else {
-                    await PriestStatus.create(item);
+                    await PriestStatus.create(cleanedData);
+                    importedCount++;
                 }
-
-                importedCount++;
             } catch (error) {
-                console.error(`Error processing status ${item.id}:`, error);
-                errors.push({ id: item.id, error: error.message });
+                console.error(`Error processing status ${item.id || 'unknown'}:`, error);
+                errors.push({
+                    id: item.id || 'unknown',
+                    pstatus: item.pstatus || 'unknown',
+                    error: error.message
+                });
             }
         }
 
         res.json({
             success: true,
-            message: `Imported ${importedCount} status records successfully. ${errors.length} errors occurred.`,
+            message: `Imported ${importedCount} new status records and updated ${updatedCount} existing ones successfully. ${errors.length} errors occurred.`,
+            imported: importedCount,
+            updated: updatedCount,
             errors: errors
         });
 
@@ -673,46 +1155,863 @@ router.post('/priest-others', async (req, res) => {
     }
 });
 
+function cleanStatusData(data) {
+    const cleaned = { ...data };
+    if (cleaned.display_order) {
+        cleaned.display_order = parseInt(cleaned.display_order) || 0;
+    } else {
+        cleaned.display_order = 0;
+    }
+    if (cleaned.updated_date && cleaned.updated_date !== '0000-00-00 00:00:00' && cleaned.updated_date !== '') {
+        cleaned.updated_date = new Date(cleaned.updated_date);
+    } else {
+        cleaned.updated_date = null;
+    }
+    Object.keys(cleaned).forEach(key => {
+        if (cleaned[key] === '' || cleaned[key] === '0000-00-00 00:00:00') {
+            cleaned[key] = null;
+        }
+    });
+    return cleaned;
+}
 
-// Fetch all priests
-router.get('/priests', async (req, res) => {
+// ==================== PRIEST SUB STATUS ====================
+// Get all priest sub statuses
+router.get('/priest-sub-status', async (req, res) => {
     try {
-        const { search } = req.query;
+        const { search, main_status_id, page = 1, limit = 50 } = req.query;
+        const skip = (page - 1) * limit;
+
+        let filter = {};
+        if (search) {
+            filter.status = { $regex: search, $options: 'i' };
+        }
+        if (main_status_id) {
+            filter.main_status_id = main_status_id;
+        }
+
+        const [subStatuses, total] = await Promise.all([
+            PriestSubStatus.find(filter)
+                .skip(skip)
+                .limit(parseInt(limit))
+                .sort({ display_order: 1, status: 1 }),
+            PriestSubStatus.countDocuments(filter)
+        ]);
+
+        res.json({
+            success: true,
+            count: total,
+            data: subStatuses,
+            page: parseInt(page),
+            totalPages: Math.ceil(total / limit)
+        });
+    } catch (error) {
+        console.error('Error fetching priest sub statuses:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest sub statuses'
+        });
+    }
+});
+
+// Get single priest sub status by ID
+router.get('/priest-sub-status/:id', async (req, res) => {
+    try {
+        const subStatus = await PriestSubStatus.findOne({
+            $or: [
+                { _id: req.params.id },
+                { id: req.params.id }
+            ]
+        });
+
+        if (!subStatus) {
+            return res.status(404).json({
+                success: false,
+                message: 'Priest sub status not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: subStatus
+        });
+    } catch (error) {
+        console.error('Error fetching priest sub status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest sub status'
+        });
+    }
+});
+
+router.post('/priest-sub-status', async (req, res) => {
+    try {
+        const substatusData = req.body;
+
+        if (!Array.isArray(substatusData)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid data format. Expected an array.'
+            });
+        }
+
+        let importedCount = 0;
+        let updatedCount = 0;
+        let errors = [];
+
+        for (const item of substatusData) {
+            try {
+                const cleanedData = cleanSubStatusData(item);
+                const existingSubStatus = await PriestSubStatus.findOne({
+                    $or: [
+                        { id: cleanedData.id },
+                        {
+                            main_status_id: cleanedData.main_status_id,
+                            status: cleanedData.status
+                        }
+                    ]
+                });
+
+                if (existingSubStatus) {
+                    await PriestSubStatus.findByIdAndUpdate(existingSubStatus._id, cleanedData);
+                    updatedCount++;
+                } else {
+                    await PriestSubStatus.create(cleanedData);
+                    importedCount++;
+                }
+            } catch (error) {
+                console.error(`Error processing substatus ${item.id || 'unknown'}:`, error);
+                errors.push({
+                    id: item.id || 'unknown',
+                    status: item.status || 'unknown',
+                    error: error.message
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Imported ${importedCount} new substatus records and updated ${updatedCount} existing ones successfully. ${errors.length} errors occurred.`,
+            imported: importedCount,
+            updated: updatedCount,
+            errors: errors
+        });
+
+    } catch (error) {
+        console.error('Import error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during import'
+        });
+    }
+});
+
+function cleanSubStatusData(data) {
+    const cleaned = { ...data };
+    if (cleaned.display_order) {
+        cleaned.display_order = parseInt(cleaned.display_order) || 0;
+    } else {
+        cleaned.display_order = 0;
+    }
+    if (cleaned.updated_date && cleaned.updated_date !== '0000-00-00 00:00:00' && cleaned.updated_date !== '') {
+        cleaned.updated_date = new Date(cleaned.updated_date);
+    } else {
+        cleaned.updated_date = null;
+    }
+    Object.keys(cleaned).forEach(key => {
+        if (cleaned[key] === '' || cleaned[key] === '0000-00-00 00:00:00') {
+            cleaned[key] = null;
+        }
+    });
+    return cleaned;
+}
+
+// ==================== PRIEST SECONDARY SUB STATUS ====================
+// Get all priest secondary sub statuses
+router.get('/priest-secondary-sub-status', async (req, res) => {
+    try {
+        const { search, main_status_id, secondary_status_id, page = 1, limit = 50 } = req.query;
+        const skip = (page - 1) * limit;
+
+        let filter = {};
+        if (search) {
+            filter.status = { $regex: search, $options: 'i' };
+        }
+        if (main_status_id) {
+            filter.main_status_id = main_status_id;
+        }
+        if (secondary_status_id) {
+            filter.secondary_status_id = secondary_status_id;
+        }
+
+        const [secondarySubStatuses, total] = await Promise.all([
+            PriestSecondarySubStatus.find(filter)
+                .skip(skip)
+                .limit(parseInt(limit))
+                .sort({ display_order: 1, status: 1 }),
+            PriestSecondarySubStatus.countDocuments(filter)
+        ]);
+
+        res.json({
+            success: true,
+            count: total,
+            data: secondarySubStatuses,
+            page: parseInt(page),
+            totalPages: Math.ceil(total / limit)
+        });
+    } catch (error) {
+        console.error('Error fetching priest secondary sub statuses:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest secondary sub statuses'
+        });
+    }
+});
+
+// Get single priest secondary sub status by ID
+router.get('/priest-secondary-sub-status/:id', async (req, res) => {
+    try {
+        const secondarySubStatus = await PriestSecondarySubStatus.findOne({
+            $or: [
+                { _id: req.params.id },
+                { id: req.params.id }
+            ]
+        });
+
+        if (!secondarySubStatus) {
+            return res.status(404).json({
+                success: false,
+                message: 'Priest secondary sub status not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: secondarySubStatus
+        });
+    } catch (error) {
+        console.error('Error fetching priest secondary sub status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest secondary sub status'
+        });
+    }
+});
+
+router.post('/priest-secondary-sub-status', async (req, res) => {
+    try {
+        const secondarySubStatusData = req.body;
+
+        if (!Array.isArray(secondarySubStatusData)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid data format. Expected an array.'
+            });
+        }
+
+        let importedCount = 0;
+        let updatedCount = 0;
+        let errors = [];
+
+        for (const item of secondarySubStatusData) {
+            try {
+                const cleanedData = cleanSecondarySubStatusData(item);
+                const existingSecondarySubStatus = await PriestSecondarySubStatus.findOne({
+                    $or: [
+                        { id: cleanedData.id },
+                        {
+                            main_status_id: cleanedData.main_status_id,
+                            secondary_status_id: cleanedData.secondary_status_id,
+                            status: cleanedData.status
+                        }
+                    ]
+                });
+
+                if (existingSecondarySubStatus) {
+                    await PriestSecondarySubStatus.findByIdAndUpdate(existingSecondarySubStatus._id, cleanedData);
+                    updatedCount++;
+                } else {
+                    await PriestSecondarySubStatus.create(cleanedData);
+                    importedCount++;
+                }
+            } catch (error) {
+                console.error(`Error processing secondary sub status ${item.id || 'unknown'}:`, error);
+                errors.push({
+                    id: item.id || 'unknown',
+                    status: item.status || 'unknown',
+                    error: error.message
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Imported ${importedCount} new secondary sub status records and updated ${updatedCount} existing ones successfully. ${errors.length} errors occurred.`,
+            imported: importedCount,
+            updated: updatedCount,
+            errors: errors
+        });
+
+    } catch (error) {
+        console.error('Import error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during import'
+        });
+    }
+});
+
+function cleanSecondarySubStatusData(data) {
+    const cleaned = { ...data };
+    if (cleaned.display_order) {
+        cleaned.display_order = parseInt(cleaned.display_order) || 0;
+    } else {
+        cleaned.display_order = 0;
+    }
+    if (cleaned.updated_date && cleaned.updated_date !== '0000-00-00 00:00:00' && cleaned.updated_date !== '') {
+        cleaned.updated_date = new Date(cleaned.updated_date);
+    } else {
+        cleaned.updated_date = null;
+    }
+    Object.keys(cleaned).forEach(key => {
+        if (cleaned[key] === '' || cleaned[key] === '0000-00-00 00:00:00') {
+            cleaned[key] = null;
+        }
+    });
+    return cleaned;
+}
+
+// ==================== PRIEST HISTORIES ====================
+// Get all priest histories
+router.get('/priest-histories', async (req, res) => {
+    try {
+        const { search, priest_id, page = 1, limit = 50 } = req.query;
+        const skip = (page - 1) * limit;
 
         let filter = {};
         if (search) {
             filter = {
                 $or: [
-                    { name: { $regex: search, $options: 'i' } },
+                    { priest_id: { $regex: search, $options: 'i' } },
                     { designation: { $regex: search, $options: 'i' } },
-                    { current_place: { $regex: search, $options: 'i' } },
+                    { category_type: { $regex: search, $options: 'i' } },
+                    { category_id: { $regex: search, $options: 'i' } },
                 ],
             };
         }
+        if (priest_id) {
+            filter.priest_id = priest_id;
+        }
 
-        const priests = await Priest.find(filter).sort({ name: 1 });
+        const [histories, total] = await Promise.all([
+            PriestHistory.find(filter)
+                .skip(skip)
+                .limit(parseInt(limit))
+                .sort({ start_date: -1 }),
+            PriestHistory.countDocuments(filter)
+        ]);
 
         res.json({
             success: true,
-            count: priests.length,
-            data: priests,
+            count: total,
+            data: histories,
+            page: parseInt(page),
+            totalPages: Math.ceil(total / limit)
         });
     } catch (error) {
-        console.error('Error fetching priests:', error);
+        console.error('Error fetching priest histories:', error);
         res.status(500).json({
             success: false,
-            message: 'Server error while fetching priests',
+            message: 'Server error while fetching priest histories'
         });
     }
 });
-// ✅ Fetch obituary priests first
-// ✅ Fetch obituary priests
+
+// Get single priest history by ID
+router.get('/priest-histories/:id', async (req, res) => {
+    try {
+        const history = await PriestHistory.findOne({
+            $or: [
+                { _id: req.params.id },
+                { id: req.params.id }
+            ]
+        });
+
+        if (!history) {
+            return res.status(404).json({
+                success: false,
+                message: 'Priest history not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: history
+        });
+    } catch (error) {
+        console.error('Error fetching priest history:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest history'
+        });
+    }
+});
+
+// Get histories for specific priest
+router.get('/priest-histories/priest/:priest_id', async (req, res) => {
+    try {
+        const histories = await PriestHistory.find({
+            priest_id: req.params.priest_id
+        }).sort({ start_date: -1 });
+
+        res.json({
+            success: true,
+            count: histories.length,
+            data: histories
+        });
+    } catch (error) {
+        console.error('Error fetching priest histories:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest histories'
+        });
+    }
+});
+
+router.post('/priest-histories', async (req, res) => {
+    try {
+        const historyData = req.body;
+
+        if (!Array.isArray(historyData)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid data format. Expected an array.'
+            });
+        }
+
+        let importedCount = 0;
+        let updatedCount = 0;
+        let errors = [];
+
+        for (const item of historyData) {
+            try {
+                const cleanedData = cleanHistoryData(item);
+                const existingHistory = await PriestHistory.findOne({
+                    $or: [
+                        { id: cleanedData.id },
+                        {
+                            priest_id: cleanedData.priest_id,
+                            start_date: cleanedData.start_date,
+                            designation: cleanedData.designation,
+                            category_id: cleanedData.category_id
+                        }
+                    ]
+                });
+
+                if (existingHistory) {
+                    await PriestHistory.findByIdAndUpdate(existingHistory._id, cleanedData);
+                    updatedCount++;
+                } else {
+                    await PriestHistory.create(cleanedData);
+                    importedCount++;
+                }
+            } catch (error) {
+                console.error(`Error processing history ${item.id || 'unknown'}:`, error);
+                errors.push({
+                    id: item.id || 'unknown',
+                    priest_id: item.priest_id || 'unknown',
+                    error: error.message
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Imported ${importedCount} new history records and updated ${updatedCount} existing ones successfully. ${errors.length} errors occurred.`,
+            imported: importedCount,
+            updated: updatedCount,
+            errors: errors
+        });
+
+    } catch (error) {
+        console.error('Import error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during import'
+        });
+    }
+});
+
+function cleanHistoryData(data) {
+    const cleaned = { ...data };
+    const dateFields = ['start_date', 'end_date', 'updated_date'];
+    dateFields.forEach(field => {
+        if (cleaned[field] && cleaned[field] !== '0000-00-00' && cleaned[field] !== '' && cleaned[field] !== '0000-00-00 00:00:00') {
+            cleaned[field] = new Date(cleaned[field]);
+        } else {
+            cleaned[field] = null;
+        }
+    });
+    if (cleaned.start_date && cleaned.end_date && !isNaN(cleaned.start_date.getTime()) && !isNaN(cleaned.end_date.getTime())) {
+        const diffTime = Math.abs(cleaned.end_date - cleaned.start_date);
+        cleaned.duration_days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    } else {
+        cleaned.duration_days = null;
+    }
+    const today = new Date();
+    cleaned.is_current = !cleaned.end_date || cleaned.end_date > today;
+    Object.keys(cleaned).forEach(key => {
+        if (cleaned[key] === '' || cleaned[key] === '0000-00-00' || cleaned[key] === '0000-00-00 00:00:00') {
+            cleaned[key] = null;
+        }
+    });
+    return cleaned;
+}
+
+// ==================== PRIEST EDUCATIONS ====================
+// Get all priest educations
+router.get('/priest-educations', async (req, res) => {
+    try {
+        const { search, web_priest_id, education_type, page = 1, limit = 50 } = req.query;
+        const skip = (page - 1) * limit;
+
+        let filter = {};
+        if (search) {
+            filter = {
+                $or: [
+                    { web_priest_id: { $regex: search, $options: 'i' } },
+                    { course_type: { $regex: search, $options: 'i' } },
+                    { institution: { $regex: search, $options: 'i' } },
+                    { course: { $regex: search, $options: 'i' } },
+                ],
+            };
+        }
+        if (web_priest_id) {
+            filter.web_priest_id = web_priest_id;
+        }
+        if (education_type) {
+            filter.education_type = education_type;
+        }
+
+        const [educations, total] = await Promise.all([
+            PriestEducation.find(filter)
+                .skip(skip)
+                .limit(parseInt(limit))
+                .sort({ start_date: 1 }),
+            PriestEducation.countDocuments(filter)
+        ]);
+
+        res.json({
+            success: true,
+            count: total,
+            data: educations,
+            page: parseInt(page),
+            totalPages: Math.ceil(total / limit)
+        });
+    } catch (error) {
+        console.error('Error fetching priest educations:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest educations'
+        });
+    }
+});
+
+// Get single priest education by ID
+router.get('/priest-educations/:id', async (req, res) => {
+    try {
+        const education = await PriestEducation.findOne({
+            $or: [
+                { _id: req.params.id },
+                { id: req.params.id }
+            ]
+        });
+
+        if (!education) {
+            return res.status(404).json({
+                success: false,
+                message: 'Priest education not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: education
+        });
+    } catch (error) {
+        console.error('Error fetching priest education:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest education'
+        });
+    }
+});
+
+// Get educations for specific priest
+router.get('/priest-educations/priest/:web_priest_id', async (req, res) => {
+    try {
+        const educations = await PriestEducation.find({
+            web_priest_id: req.params.web_priest_id
+        }).sort({ start_date: 1 });
+
+        res.json({
+            success: true,
+            count: educations.length,
+            data: educations
+        });
+    } catch (error) {
+        console.error('Error fetching priest educations:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest educations'
+        });
+    }
+});
+
+router.post('/priest-educations', async (req, res) => {
+    try {
+        const educationData = req.body;
+
+        if (!Array.isArray(educationData)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid data format. Expected an array.'
+            });
+        }
+
+        let importedCount = 0;
+        let updatedCount = 0;
+        let errors = [];
+
+        for (const item of educationData) {
+            try {
+                const cleanedData = cleanEducationData(item);
+                const existingEducation = await PriestEducation.findOne({
+                    $or: [
+                        { id: cleanedData.id },
+                        {
+                            web_priest_id: cleanedData.web_priest_id,
+                            course_type: cleanedData.course_type,
+                            course: cleanedData.course,
+                            institution: cleanedData.institution,
+                            start_date: cleanedData.start_date
+                        }
+                    ]
+                });
+
+                if (existingEducation) {
+                    await PriestEducation.findByIdAndUpdate(existingEducation._id, cleanedData);
+                    updatedCount++;
+                } else {
+                    await PriestEducation.create(cleanedData);
+                    importedCount++;
+                }
+            } catch (error) {
+                console.error(`Error processing education ${item.id || 'unknown'}:`, error);
+                errors.push({
+                    id: item.id || 'unknown',
+                    web_priest_id: item.web_priest_id || 'unknown',
+                    error: error.message
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Imported ${importedCount} new education records and updated ${updatedCount} existing ones. ${errors.length} errors occurred.`,
+            imported: importedCount,
+            updated: updatedCount,
+            errors: errors
+        });
+
+    } catch (error) {
+        console.error('Import error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during import'
+        });
+    }
+});
+
+function cleanEducationData(data) {
+    const cleaned = { ...data };
+    const dateFields = ['start_date', 'end_date', 'updated_date'];
+    dateFields.forEach(field => {
+        if (cleaned[field] && cleaned[field] !== '0000-00-00' && cleaned[field] !== '' && cleaned[field] !== '0000-00-00 00:00:00') {
+            cleaned[field] = new Date(cleaned[field]);
+        } else {
+            cleaned[field] = null;
+        }
+    });
+    if (cleaned.start_date && cleaned.end_date && !isNaN(cleaned.start_date.getTime()) && !isNaN(cleaned.end_date.getTime())) {
+        const years = (cleaned.end_date.getFullYear() - cleaned.start_date.getFullYear()) +
+            (cleaned.end_date.getMonth() - cleaned.start_date.getMonth()) / 12;
+        cleaned.duration_years = parseFloat(years.toFixed(1));
+    } else {
+        cleaned.duration_years = null;
+    }
+    Object.keys(cleaned).forEach(key => {
+        if (cleaned[key] === '' || cleaned[key] === '0000-00-00' || cleaned[key] === '0000-00-00 00:00:00') {
+            cleaned[key] = null;
+        }
+    });
+    return cleaned;
+}
+
+// ==================== PRIEST DESIGNATIONS ====================
+// Get all priest designations
+router.get('/priest-designations', async (req, res) => {
+    try {
+        const { search, status, page = 1, limit = 50 } = req.query;
+        const skip = (page - 1) * limit;
+
+        let filter = {};
+        if (search) {
+            filter.name = { $regex: search, $options: 'i' };
+        }
+        if (status) {
+            filter.status = status;
+        }
+
+        const [designations, total] = await Promise.all([
+            PriestDesignation.find(filter)
+                .skip(skip)
+                .limit(parseInt(limit))
+                .sort({ sort_order: 1, name: 1 }),
+            PriestDesignation.countDocuments(filter)
+        ]);
+
+        res.json({
+            success: true,
+            count: total,
+            data: designations,
+            page: parseInt(page),
+            totalPages: Math.ceil(total / limit)
+        });
+    } catch (error) {
+        console.error('Error fetching priest designations:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest designations'
+        });
+    }
+});
+
+// Get single priest designation by ID
+router.get('/priest-designations/:id', async (req, res) => {
+    try {
+        const designation = await PriestDesignation.findOne({
+            $or: [
+                { _id: req.params.id },
+                { id: req.params.id }
+            ]
+        });
+
+        if (!designation) {
+            return res.status(404).json({
+                success: false,
+                message: 'Priest designation not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: designation
+        });
+    } catch (error) {
+        console.error('Error fetching priest designation:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching priest designation'
+        });
+    }
+});
+
+router.post('/priest-designations', async (req, res) => {
+    try {
+        const designationData = req.body;
+
+        if (!Array.isArray(designationData)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid data format. Expected an array.'
+            });
+        }
+
+        let importedCount = 0;
+        let updatedCount = 0;
+        let errors = [];
+
+        for (const item of designationData) {
+            try {
+                const cleanedData = cleanDesignationData(item);
+                const existingDesignation = await PriestDesignation.findOne({
+                    $or: [
+                        { id: cleanedData.id },
+                        { name: cleanedData.name }
+                    ]
+                });
+
+                if (existingDesignation) {
+                    await PriestDesignation.findByIdAndUpdate(existingDesignation._id, cleanedData);
+                    updatedCount++;
+                } else {
+                    await PriestDesignation.create(cleanedData);
+                    importedCount++;
+                }
+            } catch (error) {
+                console.error(`Error processing designation ${item.id || 'unknown'}:`, error);
+                errors.push({
+                    id: item.id || 'unknown',
+                    name: item.name || 'unknown',
+                    error: error.message
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Imported ${importedCount} new designations and updated ${updatedCount} existing ones. ${errors.length} errors occurred.`,
+            imported: importedCount,
+            updated: updatedCount,
+            errors: errors
+        });
+
+    } catch (error) {
+        console.error('Import error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during import'
+        });
+    }
+});
+
+function cleanDesignationData(data) {
+    const cleaned = { ...data };
+    if (cleaned.sort_order) {
+        cleaned.sort_order = parseInt(cleaned.sort_order) || 0;
+    } else {
+        cleaned.sort_order = 0;
+    }
+    if (cleaned.updated_date && cleaned.updated_date !== '0000-00-00 00:00:00' && cleaned.updated_date !== '') {
+        cleaned.updated_date = new Date(cleaned.updated_date);
+    } else {
+        cleaned.updated_date = null;
+    }
+    Object.keys(cleaned).forEach(key => {
+        if (cleaned[key] === '' || cleaned[key] === '0000-00-00 00:00:00') {
+            cleaned[key] = null;
+        }
+    });
+    return cleaned;
+}
+
+// ==================== SPECIAL ENDPOINTS ====================
+// Get obituary priests
 router.get('/priests/obituary', async (req, res) => {
     try {
         const { filter } = req.query;
         const year = 2020;
-
-        console.log("🔍 Fetching obituary with filter:", filter);
 
         let query = { death_date: { $ne: null } };
 
@@ -728,36 +2027,65 @@ router.get('/priests/obituary', async (req, res) => {
             };
         }
 
-
-        console.log("👉 Final Mongo Query:", JSON.stringify(query));
-
         const priests = await Priest.find(query).sort({ death_date: -1 }).lean();
 
-        console.log("✅ Priests found:", priests.length);
-        res.json({ success: true, count: priests.length, data: priests });
+        res.json({
+            success: true,
+            count: priests.length,
+            data: priests
+        });
     } catch (error) {
         console.error("❌ Error fetching obituary:", error);
-        res.status(500).json({ success: false, message: "Server error while fetching obituary" });
+        res.status(500).json({
+            success: false,
+            message: "Server error while fetching obituary"
+        });
     }
 });
 
-
-// 👇 Place dynamic route after
-router.get('/priests/:id', async (req, res) => {
+// ==================== DATABASE SUMMARY ====================
+// Get database summary (counts for all tables)
+router.get('/summary', async (req, res) => {
     try {
-        const priest = await Priest.findById(req.params.id);
-        if (!priest) {
-            return res.status(404).json({ success: false, message: 'Priest not found' });
+        const models = {
+            parishes: Parish,
+            priests: Priest,
+            'priest-others': PriestOthers,
+            administration: Administration,
+            institutions: Institution,
+            foranes: Forane,
+            'priest-status': PriestStatus,
+            'priest-sub-status': PriestSubStatus,
+            'priest-secondary-sub-status': PriestSecondarySubStatus,
+            'priest-histories': PriestHistory,
+            'priest-educations': PriestEducation,
+            'priest-designations': PriestDesignation
+        };
+
+        const summary = {};
+        for (const [key, model] of Object.entries(models)) {
+            try {
+                const count = await model.countDocuments();
+                summary[key] = count;
+            } catch (error) {
+                summary[key] = 0;
+            }
         }
-        res.json({ success: true, data: priest });
+
+        res.json({
+            success: true,
+            timestamp: new Date().toISOString(),
+            summary: summary,
+            totalTables: Object.keys(summary).length,
+            totalRecords: Object.values(summary).reduce((a, b) => a + b, 0)
+        });
     } catch (error) {
-        console.error('Error fetching priest details:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
+        console.error('Error fetching database summary:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching database summary'
+        });
     }
 });
-
-
-
-
 
 export default router;

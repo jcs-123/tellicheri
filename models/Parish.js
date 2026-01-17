@@ -18,17 +18,25 @@ const parishSchema = new mongoose.Schema({
   grade: String,
   email: String,
   website: String,
+
   area: Number,
   no_family_units: Number,
   no_families: Number,
   total_population: Number,
+
   estb_date: Date,
   latitude: Number,
   longitude: Number,
+
   status: String,
   vicar_name: String,
   asst_vicar_names: String,
-  resident_vicar_names: String
-}, { timestamps: true });
+  resident_vicar_names: String,
+
+  extra_data: mongoose.Schema.Types.Mixed
+}, {
+  timestamps: true,
+  strict: true
+});
 
 export default mongoose.model('Parish', parishSchema);
