@@ -640,194 +640,249 @@ function cleanPriestOtherData(data) {
 
 // ==================== PRIESTS ====================
 // Get all priests
+// ==================== PRIESTS (ACTIVE ONLY – NO LIMIT) ====================
 router.get('/priests', async (req, res) => {
-    try {
-        const { search, page = 1, limit = 50 } = req.query;
-        const skip = (page - 1) * limit;
+  try {
+    const { search } = req.query;
 
-        let filter = {};
-        if (search) {
-            filter = {
-                $or: [
-                    { name: { $regex: search, $options: 'i' } },
-                    { designation: { $regex: search, $options: 'i' } },
-                    { current_place: { $regex: search, $options: 'i' } },
-                    { email: { $regex: search, $options: 'i' } },
-                    { mobile: { $regex: search, $options: 'i' } },
-                ],
-            };
-        }
+    // ✅ Base filter → ONLY ACTIVE PRIESTS
+    let filter = {
+      expired: "Active"
+    };
 
-        const [priests, total] = await Promise.all([
-            Priest.find(filter)
-                .skip(skip)
-                .limit(parseInt(limit))
-                .sort({ name: 1 }),
-            Priest.countDocuments(filter)
-        ]);
-
-        res.json({
-            success: true,
-            count: total,
-            data: priests,
-            page: parseInt(page),
-            totalPages: Math.ceil(total / limit)
-        });
-    } catch (error) {
-        console.error('Error fetching priests:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error while fetching priests',
-        });
+    // ✅ Search filter (optional)
+    if (search && search.trim() !== '') {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { designation: { $regex: search, $options: 'i' } },
+        { current_place: { $regex: search, $options: 'i' } },
+        { present_address: { $regex: search, $options: 'i' } },
+        { mobile: { $regex: search, $options: 'i' } },
+      ];
     }
+
+    // ✅ NO limit, NO skip, NO sort → DATABASE ORDER
+    const priests = await Priest.find(filter);
+
+    res.json({
+      success: true,
+      count: priests.length,
+      data: priests
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching priests:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching priests'
+    });
+  }
 });
+
 
 // Get single priest by ID
+// ==================== PRIEST DETAIL ====================
 router.get('/priests/:id', async (req, res) => {
-    try {
-        const priest = await Priest.findOne({
-            $or: [
-                { _id: req.params.id },
-                { id: req.params.id }
-            ]
-        });
+  try {
+    const priest = await Priest.findOne({
+      $or: [
+        { _id: req.params.id },
+        { id: req.params.id }
+      ]
+    }).lean();
 
-        if (!priest) {
-            return res.status(404).json({
-                success: false,
-                message: 'Priest not found'
-            });
-        }
-
-        res.json({
-            success: true,
-            data: priest
-        });
-    } catch (error) {
-        console.error('Error fetching priest:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error while fetching priest'
-        });
+    if (!priest) {
+      return res.status(404).json({
+        success: false,
+        message: 'Priest not found'
+      });
     }
+
+    const serviceHistory = await PriestHistory.find({
+      priest_id: priest.id || priest._id.toString()
+    }).sort({ start_date: -1 });
+
+    res.json({
+      success: true,
+      data: {
+        ...priest,
+        serviceHistory
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching priest:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching priest'
+    });
+  }
 });
+
 // ==================== PRIEST DETAIL (WITH SERVICE HISTORY) ====================
-router.get('/priests/:id', async (req, res) => {
-    try {
-        const priest = await Priest.findOne({
-            $or: [
-                { _id: req.params.id },
-                { id: req.params.id }
-            ]
-        }).lean();
+// router.get('/priests/:id', async (req, res) => {
+//     try {
+//         const priest = await Priest.findOne({
+//             $or: [
+//                 { _id: req.params.id },
+//                 { id: req.params.id }
+//             ]
+//         }).lean();
 
-        if (!priest) {
-            return res.status(404).json({
-                success: false,
-                message: 'Priest not found'
-            });
-        }
+//         if (!priest) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: 'Priest not found'
+//             });
+//         }
 
-        // 🔥 Fetch service history
-        const serviceHistory = await PriestHistory.find({
-            priest_id: priest.id || priest._id.toString()
-        })
-            .sort({ start_date: -1 })
-            .lean();
+//         // 🔥 Fetch service history
+//         const serviceHistory = await PriestHistory.find({
+//             priest_id: priest.id || priest._id.toString()
+//         })
+//             .sort({ start_date: -1 })
+//             .lean();
 
-        res.json({
-            success: true,
-            data: {
-                ...priest,
-                serviceHistory
-            }
-        });
+//         res.json({
+//             success: true,
+//             data: {
+//                 ...priest,
+//                 serviceHistory
+//             }
+//         });
 
-    } catch (error) {
-        console.error('Error fetching priest detail:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error while fetching priest detail'
-        });
-    }
-});
+//     } catch (error) {
+//         console.error('Error fetching priest detail:', error);
+//         res.status(500).json({
+//             success: false,
+//             message: 'Server error while fetching priest detail'
+//         });
+//     }
+// });
 
 router.post('/priests', async (req, res) => {
-    try {
-        const priestsData = req.body;
+  try {
+    const priestsData = req.body;
 
-        if (!Array.isArray(priestsData)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid data format. Expected an array.'
-            });
-        }
-
-        let importedCount = 0;
-        let updatedCount = 0;
-        let errors = [];
-
-        for (const priestData of priestsData) {
-            try {
-                const cleanedData = cleanPriestData(priestData);
-                const existingPriest = await Priest.findOne({
-                    $or: [
-                        { id: cleanedData.id },
-                        { email: cleanedData.email },
-                        { mobile: cleanedData.mobile }
-                    ]
-                });
-
-                if (existingPriest) {
-                    await Priest.findByIdAndUpdate(existingPriest._id, cleanedData);
-                    updatedCount++;
-                } else {
-                    await Priest.create(cleanedData);
-                    importedCount++;
-                }
-            } catch (error) {
-                console.error(`Error processing priest ${priestData.id || 'unknown'}:`, error);
-                errors.push({
-                    id: priestData.id || 'unknown',
-                    name: priestData.name || 'unknown',
-                    error: error.message
-                });
-            }
-        }
-
-        res.json({
-            success: true,
-            message: `Imported ${importedCount} new priests and updated ${updatedCount} existing priests successfully. ${errors.length} errors occurred.`,
-            imported: importedCount,
-            updated: updatedCount,
-            errors: errors
-        });
-
-    } catch (error) {
-        console.error('Import error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error during import'
-        });
+    if (!Array.isArray(priestsData)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid data format. Expected an array.'
+      });
     }
+
+    let importedCount = 0;
+    let updatedCount = 0;
+    let errors = [];
+
+    for (const priestData of priestsData) {
+      try {
+        const cleanedData = cleanPriestData(priestData);
+
+        // ✅ USE ID AS PRIMARY KEY (IMPORTANT)
+        const existingPriest = await Priest.findOne({
+          id: cleanedData.id
+        });
+
+        if (existingPriest) {
+          await Priest.updateOne(
+            { _id: existingPriest._id },
+            { $set: cleanedData }
+          );
+          updatedCount++;
+        } else {
+          await Priest.create(cleanedData);
+          importedCount++;
+        }
+
+      } catch (error) {
+        console.error(
+          `❌ Error processing priest ID ${priestData.id}:`,
+          error.message
+        );
+
+        errors.push({
+          id: priestData.id,
+          name: priestData.name,
+          error: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      imported: importedCount,
+      updated: updatedCount,
+      errorCount: errors.length,
+      errorSamples: errors.slice(0, 5)
+    });
+
+  } catch (error) {
+    console.error('❌ Priest import failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during priest import'
+    });
+  }
 });
 
+
 function cleanPriestData(data) {
-    const cleaned = { ...data };
-    const dateFields = [
-        'baptism_date', 'dob', 'join_seminary',
-        'ordination_date', 'profession_date', 'death_date'
-    ];
-    dateFields.forEach(field => {
-        if (cleaned[field] && cleaned[field] !== '0000-00-00' && cleaned[field] !== '') {
-            const parsedDate = new Date(cleaned[field]);
-            cleaned[field] = isNaN(parsedDate.getTime()) ? null : parsedDate;
-        } else {
-            cleaned[field] = null;
-        }
-    });
-    return cleaned;
+  const cleaned = { ...data };
+
+  // ==========================
+  // SAFE DATE HANDLING
+  // ==========================
+  const dateFields = [
+    'baptism_date',
+    'dob',
+    'join_seminary',
+    'ordination_date',
+    'profession_date',
+    'death_date'
+  ];
+
+  dateFields.forEach(field => {
+    if (
+      cleaned[field] &&
+      cleaned[field] !== '0000-00-00' &&
+      cleaned[field] !== '' &&
+      cleaned[field] !== null
+    ) {
+      const d = new Date(cleaned[field]);
+      cleaned[field] = isNaN(d.getTime()) ? null : d;
+    } else {
+      cleaned[field] = null;
+    }
+  });
+
+  // ==========================
+  // FIELD MAPPINGS (IMPORTANT)
+  // ==========================
+  cleaned.expired = cleaned.expired_status || null;
+  cleaned.education = cleaned.education_names || null;
+
+  cleaned.web_priest_status_id =
+    cleaned.priest_status || null;
+
+  cleaned.web_priest_sub_status_id =
+    cleaned.sub_status_names || null;
+
+  cleaned.web_priest_secondary_sub_status_id =
+    cleaned.secondary_sub_status_names || null;
+
+  // ==========================
+  // REMOVE UNWANTED FIELDS
+  // ==========================
+  delete cleaned.expired_status;
+  delete cleaned.education_names;
+  delete cleaned.priest_status;
+  delete cleaned.sub_status_names;
+  delete cleaned.secondary_sub_status_names;
+
+  return cleaned;
 }
+
 
 // ==================== PARISHES ====================
 // Get all parishes
