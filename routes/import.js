@@ -287,45 +287,41 @@ router.get('/social-charitable-institutions', async (req, res) => {
 // ==================== ADMINISTRATION ====================
 // Get all administration records
 router.get('/administration', async (req, res) => {
-    try {
-        const { search, page = 1, limit = 50 } = req.query;
-        const skip = (page - 1) * limit;
+  try {
+    const { search = '', section } = req.query;
 
-        let filter = {};
-        if (search) {
-            filter = {
-                $or: [
-                    { name: { $regex: search, $options: 'i' } },
-                    { section: { $regex: search, $options: 'i' } },
-                    { category: { $regex: search, $options: 'i' } },
-                    { head_id: { $regex: search, $options: 'i' } },
-                ],
-            };
-        }
+    let filter = {};
 
-        const [administration, total] = await Promise.all([
-            Administration.find(filter)
-                .skip(skip)
-                .limit(parseInt(limit))
-                .sort({ display_order: 1 }),
-            Administration.countDocuments(filter)
-        ]);
-
-        res.json({
-            success: true,
-            count: total,
-            data: administration,
-            page: parseInt(page),
-            totalPages: Math.ceil(total / limit)
-        });
-    } catch (error) {
-        console.error('Error fetching administration:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error while fetching administration'
-        });
+    // ✅ STRICT SECTION FILTER (if passed)
+    if (section) {
+      filter.section = section;
     }
+
+    // ✅ SEARCH (name + category only recommended)
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { category: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const administration = await Administration.find(filter)
+      .sort({ display_order: 1 }); // ✅ keep order
+
+    res.json({
+      success: true,
+      count: administration.length,
+      data: administration,
+    });
+  } catch (error) {
+    console.error('Error fetching administration:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching administration',
+    });
+  }
 });
+
 
 // Get single administration by ID
 router.get('/administration/:id', async (req, res) => {
