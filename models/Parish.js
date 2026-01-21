@@ -33,6 +33,12 @@ const parishSchema = new mongoose.Schema({
   asst_vicar_names: String,
   resident_vicar_names: String,
 
+  // ✅ ADD PHOTO FIELD
+  photo: {
+    type: String,   // store filename or relative path
+    default: null
+  },
+
   extra_data: mongoose.Schema.Types.Mixed
 }, {
   timestamps: true,

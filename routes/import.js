@@ -862,70 +862,110 @@ router.get('/priests/:id', async (req, res) => {
 // });
 
 router.post('/priests', async (req, res) => {
-    try {
-        const priestsData = req.body;
+  try {
+    const priestsData = req.body;
 
-        if (!Array.isArray(priestsData)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid data format. Expected an array.'
-            });
-        }
-
-        let importedCount = 0;
-        let updatedCount = 0;
-        let errors = [];
-
-        for (const priestData of priestsData) {
-            try {
-                const cleanedData = cleanPriestData(priestData);
-
-                // ✅ USE ID AS PRIMARY KEY (IMPORTANT)
-                const existingPriest = await Priest.findOne({
-                    id: cleanedData.id
-                });
-
-                if (existingPriest) {
-                    await Priest.updateOne(
-                        { _id: existingPriest._id },
-                        { $set: cleanedData }
-                    );
-                    updatedCount++;
-                } else {
-                    await Priest.create(cleanedData);
-                    importedCount++;
-                }
-
-            } catch (error) {
-                console.error(
-                    `❌ Error processing priest ID ${priestData.id}:`,
-                    error.message
-                );
-
-                errors.push({
-                    id: priestData.id,
-                    name: priestData.name,
-                    error: error.message
-                });
-            }
-        }
-
-        res.json({
-            success: true,
-            imported: importedCount,
-            updated: updatedCount,
-            errorCount: errors.length,
-            errorSamples: errors.slice(0, 5)
-        });
-
-    } catch (error) {
-        console.error('❌ Priest import failed:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error during priest import'
-        });
+    if (!Array.isArray(priestsData)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Expected array of priests'
+      });
     }
+
+    let inserted = 0;
+    let updated = 0;
+    let errors = [];
+
+    for (const p of priestsData) {
+      try {
+        const payload = {
+          id: p.id,
+          archival_code: p.archival_code,
+
+          name: p.name,
+          official_name: p.official_name,
+          batch: p.batch,
+          baptism_name: p.baptism_name,
+          designation: p.designation,
+
+          home_parish_id: p.home_parish_id,
+          home_parish: p.home_parish,
+          current_place: p.current_place,
+          house_name: p.house_name,
+          place: p.place,
+
+          placeofbirth: p.placeofbirth,
+          placeofbaptism: p.placeofbaptism,
+          baptism_date: p.baptism_date ? new Date(p.baptism_date) : null,
+
+          present_address: p.present_address,
+          phone: p.phone,
+          mobile: p.mobile,
+          whatsapp: p.whatsapp,
+          email: p.email,
+
+          dob: p.dob ? new Date(p.dob) : null,
+          feast_day: p.feast_day,
+          feast_month: p.feast_month,
+          patron: p.patron,
+
+          join_seminary: p.join_seminary ? new Date(p.join_seminary) : null,
+          ordination_date: p.ordination_date ? new Date(p.ordination_date) : null,
+          ordination_place: p.ordination_place,
+          celebrant: p.celebrant,
+
+          father_name: p.father_name,
+          mother_name: p.mother_name,
+
+          web_priest_status_id: p.web_priest_status_id,
+          web_priest_sub_status_id: p.web_priest_sub_status_id,
+          web_priest_secondary_sub_status_id: p.web_priest_secondary_sub_status_id,
+
+          expired: p.expired,
+          education: p.education,
+          latest_appoint_year: p.latest_appoint_year,
+          languages: p.languages,
+
+          // ✅ PHOTO FILENAME ONLY
+          photo: p.photo || null
+        };
+
+        const existing = await Priest.findOne({ id: payload.id });
+
+        if (existing) {
+          await Priest.updateOne({ _id: existing._id }, { $set: payload });
+          updated++;
+        } else {
+          await Priest.create(payload);
+          inserted++;
+        }
+
+      } catch (err) {
+        errors.push({
+          id: p.id,
+          name: p.name,
+          error: err.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      inserted,
+      updated,
+      errors: errors.length,
+      errorSamples: errors.slice(0, 5)
+    });
+
+  } catch (error) {
+    console.error('❌ Priest import failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during priest import'
+    });
+  }
 });
+
 
 
 function cleanPriestData(data) {
@@ -1093,7 +1133,10 @@ router.post('/parishes', async (req, res) => {
                     asst_vicar_names,
                     resident_vicar_names,
 
-                    // 🔥 everything else
+                    // ✅ ADD PHOTO HERE
+                    photo,
+
+                    // 🔥 everything else goes to extra_data
                     ...extra_data
                 } = p;
 
@@ -1120,14 +1163,19 @@ router.post('/parishes', async (req, res) => {
                     asst_vicar_names,
                     resident_vicar_names,
 
-                    // ✅ proper type conversion
+                    // ✅ PHOTO STORED AS STRING (FILENAME / RELATIVE PATH)
+                    photo: photo ? String(photo).trim() : null,
+
+                    // ✅ type conversion
                     area: Number(p.area) || 0,
                     no_family_units: Number(p.no_family_units) || 0,
                     no_families: Number(p.no_families) || 0,
                     total_population: Number(p.total_population) || 0,
                     latitude: Number(p.latitude) || null,
                     longitude: Number(p.longitude) || null,
-                    estb_date: p.estb_date ? new Date(`${p.estb_date}-01-01`) : null,
+                    estb_date: p.estb_date
+                        ? new Date(`${p.estb_date}-01-01`)
+                        : null,
 
                     extra_data
                 };
