@@ -288,44 +288,40 @@ router.get('/social-charitable-institutions', async (req, res) => {
 // Get all administration records
 router.get('/administration', async (req, res) => {
     try {
-        const { search, page = 1, limit = 50 } = req.query;
-        const skip = (page - 1) * limit;
+        const { search = '', section } = req.query;
 
         let filter = {};
-        if (search) {
-            filter = {
-                $or: [
-                    { name: { $regex: search, $options: 'i' } },
-                    { section: { $regex: search, $options: 'i' } },
-                    { category: { $regex: search, $options: 'i' } },
-                    { head_id: { $regex: search, $options: 'i' } },
-                ],
-            };
+
+        // ✅ STRICT SECTION FILTER (if passed)
+        if (section) {
+            filter.section = section;
         }
 
-        const [administration, total] = await Promise.all([
-            Administration.find(filter)
-                .skip(skip)
-                .limit(parseInt(limit))
-                .sort({ display_order: 1 }),
-            Administration.countDocuments(filter)
-        ]);
+        // ✅ SEARCH (name + category only recommended)
+        if (search) {
+            filter.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { category: { $regex: search, $options: 'i' } },
+            ];
+        }
+
+        const administration = await Administration.find(filter)
+            .sort({ display_order: 1 }); // ✅ keep order
 
         res.json({
             success: true,
-            count: total,
+            count: administration.length,
             data: administration,
-            page: parseInt(page),
-            totalPages: Math.ceil(total / limit)
         });
     } catch (error) {
         console.error('Error fetching administration:', error);
         res.status(500).json({
             success: false,
-            message: 'Server error while fetching administration'
+            message: 'Server error while fetching administration',
         });
     }
 });
+
 
 // Get single administration by ID
 router.get('/administration/:id', async (req, res) => {
@@ -739,6 +735,48 @@ function cleanPriestOtherData(data) {
     return cleaned;
 }
 
+// ==================== SPECIAL ENDPOINTS ====================
+// Get obituary priests
+// ==================== OBITUARY (BEFORE / AFTER 2020) ====================
+// ==================== OBITUARY (FINAL) ====================
+router.get('/priests/obituary', async (req, res) => {
+    try {
+        const { filter } = req.query;
+
+        const pivotDate = new Date("2020-01-01");
+
+        let query = {
+            death_date: { $ne: null }
+        };
+
+        if (filter === "before") {
+            query.death_date = { $lt: pivotDate };
+        }
+
+        if (filter === "after") {
+            query.death_date = { $gte: pivotDate };
+        }
+
+        const priests = await Priest.find(query)
+            .sort({ death_date: -1 }) // latest death first
+            .lean();
+
+        res.json({
+            success: true,
+            count: priests.length,
+            data: priests
+        });
+    } catch (error) {
+        console.error("❌ Error fetching obituary:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error while fetching obituary"
+        });
+    }
+});
+
+
+
 // ==================== PRIESTS ====================
 // Get all priests
 // ==================== PRIESTS (ACTIVE ONLY – NO LIMIT) ====================
@@ -862,108 +900,108 @@ router.get('/priests/:id', async (req, res) => {
 // });
 
 router.post('/priests', async (req, res) => {
-  try {
-    const priestsData = req.body;
+    try {
+        const priestsData = req.body;
 
-    if (!Array.isArray(priestsData)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Expected array of priests'
-      });
-    }
-
-    let inserted = 0;
-    let updated = 0;
-    let errors = [];
-
-    for (const p of priestsData) {
-      try {
-        const payload = {
-          id: p.id,
-          archival_code: p.archival_code,
-
-          name: p.name,
-          official_name: p.official_name,
-          batch: p.batch,
-          baptism_name: p.baptism_name,
-          designation: p.designation,
-
-          home_parish_id: p.home_parish_id,
-          home_parish: p.home_parish,
-          current_place: p.current_place,
-          house_name: p.house_name,
-          place: p.place,
-
-          placeofbirth: p.placeofbirth,
-          placeofbaptism: p.placeofbaptism,
-          baptism_date: p.baptism_date ? new Date(p.baptism_date) : null,
-
-          present_address: p.present_address,
-          phone: p.phone,
-          mobile: p.mobile,
-          whatsapp: p.whatsapp,
-          email: p.email,
-
-          dob: p.dob ? new Date(p.dob) : null,
-          feast_day: p.feast_day,
-          feast_month: p.feast_month,
-          patron: p.patron,
-
-          join_seminary: p.join_seminary ? new Date(p.join_seminary) : null,
-          ordination_date: p.ordination_date ? new Date(p.ordination_date) : null,
-          ordination_place: p.ordination_place,
-          celebrant: p.celebrant,
-
-          father_name: p.father_name,
-          mother_name: p.mother_name,
-
-          web_priest_status_id: p.web_priest_status_id,
-          web_priest_sub_status_id: p.web_priest_sub_status_id,
-          web_priest_secondary_sub_status_id: p.web_priest_secondary_sub_status_id,
-
-          expired: p.expired,
-          education: p.education,
-          latest_appoint_year: p.latest_appoint_year,
-          languages: p.languages,
-
-          // ✅ PHOTO FILENAME ONLY
-          photo: p.photo || null
-        };
-
-        const existing = await Priest.findOne({ id: payload.id });
-
-        if (existing) {
-          await Priest.updateOne({ _id: existing._id }, { $set: payload });
-          updated++;
-        } else {
-          await Priest.create(payload);
-          inserted++;
+        if (!Array.isArray(priestsData)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Expected array of priests'
+            });
         }
 
-      } catch (err) {
-        errors.push({
-          id: p.id,
-          name: p.name,
-          error: err.message
+        let inserted = 0;
+        let updated = 0;
+        let errors = [];
+
+        for (const p of priestsData) {
+            try {
+                const payload = {
+                    id: p.id,
+                    archival_code: p.archival_code,
+
+                    name: p.name,
+                    official_name: p.official_name,
+                    batch: p.batch,
+                    baptism_name: p.baptism_name,
+                    designation: p.designation,
+
+                    home_parish_id: p.home_parish_id,
+                    home_parish: p.home_parish,
+                    current_place: p.current_place,
+                    house_name: p.house_name,
+                    place: p.place,
+
+                    placeofbirth: p.placeofbirth,
+                    placeofbaptism: p.placeofbaptism,
+                    baptism_date: p.baptism_date ? new Date(p.baptism_date) : null,
+
+                    present_address: p.present_address,
+                    phone: p.phone,
+                    mobile: p.mobile,
+                    whatsapp: p.whatsapp,
+                    email: p.email,
+
+                    dob: p.dob ? new Date(p.dob) : null,
+                    feast_day: p.feast_day,
+                    feast_month: p.feast_month,
+                    patron: p.patron,
+
+                    join_seminary: p.join_seminary ? new Date(p.join_seminary) : null,
+                    ordination_date: p.ordination_date ? new Date(p.ordination_date) : null,
+                    ordination_place: p.ordination_place,
+                    celebrant: p.celebrant,
+
+                    father_name: p.father_name,
+                    mother_name: p.mother_name,
+
+                    web_priest_status_id: p.web_priest_status_id,
+                    web_priest_sub_status_id: p.web_priest_sub_status_id,
+                    web_priest_secondary_sub_status_id: p.web_priest_secondary_sub_status_id,
+
+                    expired: p.expired,
+                    education: p.education,
+                    latest_appoint_year: p.latest_appoint_year,
+                    languages: p.languages,
+
+                    // ✅ PHOTO FILENAME ONLY
+                    photo: p.photo || null
+                };
+
+                const existing = await Priest.findOne({ id: payload.id });
+
+                if (existing) {
+                    await Priest.updateOne({ _id: existing._id }, { $set: payload });
+                    updated++;
+                } else {
+                    await Priest.create(payload);
+                    inserted++;
+                }
+
+            } catch (err) {
+                errors.push({
+                    id: p.id,
+                    name: p.name,
+                    error: err.message
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            inserted,
+            updated,
+            errors: errors.length,
+            errorSamples: errors.slice(0, 5)
         });
-      }
+
+    } catch (error) {
+        console.error('❌ Priest import failed:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during priest import'
+        });
     }
-
-    res.json({
-      success: true,
-      inserted,
-      updated,
-      errors: errors.length,
-      errorSamples: errors.slice(0, 5)
-    });
-
-  } catch (error) {
-    console.error('❌ Priest import failed:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error during priest import'
-    });
-  }
 });
 
 
@@ -2204,42 +2242,6 @@ function cleanDesignationData(data) {
     return cleaned;
 }
 
-// ==================== SPECIAL ENDPOINTS ====================
-// Get obituary priests
-router.get('/priests/obituary', async (req, res) => {
-    try {
-        const { filter } = req.query;
-        const year = 2020;
-
-        let query = { death_date: { $ne: null } };
-
-        if (filter === "before") {
-            query = {
-                death_date: { $ne: null },
-                $expr: { $lt: [{ $toDate: "$death_date" }, new Date(`${year}-01-01`)] }
-            };
-        } else if (filter === "after") {
-            query = {
-                death_date: { $ne: null },
-                $expr: { $gte: [{ $toDate: "$death_date" }, new Date(`${year}-01-01`)] }
-            };
-        }
-
-        const priests = await Priest.find(query).sort({ death_date: -1 }).lean();
-
-        res.json({
-            success: true,
-            count: priests.length,
-            data: priests
-        });
-    } catch (error) {
-        console.error("❌ Error fetching obituary:", error);
-        res.status(500).json({
-            success: false,
-            message: "Server error while fetching obituary"
-        });
-    }
-});
 
 // ==================== DATABASE SUMMARY ====================
 // Get database summary (counts for all tables)
