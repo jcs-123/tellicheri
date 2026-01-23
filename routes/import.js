@@ -11,6 +11,8 @@ import PriestSecondarySubStatus from '../models/PriestSecondarySubStatus.js';
 import PriestHistory from '../models/PriestHistory.js';
 import PriestEducation from '../models/PriestEducation.js';
 import PriestDesignation from '../models/PriestDesignation.js';
+import mongoose from "mongoose";
+
 
 const router = express.Router();
 
@@ -821,42 +823,68 @@ router.get('/priests', async (req, res) => {
 
 // Get single priest by ID
 // ==================== PRIEST DETAIL ====================
-router.get('/priests/:id', async (req, res) => {
-    try {
-        const priest = await Priest.findOne({
-            $or: [
-                { _id: req.params.id },
-                { id: req.params.id }
-            ]
-        }).lean();
+// ==================== PRIEST DETAIL (SAFE & FINAL) ====================
+// ==================== PRIEST DETAIL (DEBUG + SAFE) ====================
+router.get("/priests/:id", async (req, res) => {
+  try {
+    const rawId = req.params.id;
+    const numericId = Number(rawId);
 
-        if (!priest) {
-            return res.status(404).json({
-                success: false,
-                message: 'Priest not found'
-            });
-        }
+    // ✅ Build safe OR conditions
+    const orConditions = [];
 
-        const serviceHistory = await PriestHistory.find({
-            priest_id: priest.id || priest._id.toString()
-        }).sort({ start_date: -1 });
-
-        res.json({
-            success: true,
-            data: {
-                ...priest,
-                serviceHistory
-            }
-        });
-
-    } catch (error) {
-        console.error('❌ Error fetching priest:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error while fetching priest'
-        });
+    // Mongo ObjectId
+    if (mongoose.Types.ObjectId.isValid(rawId)) {
+      orConditions.push({ _id: rawId });
     }
+
+    // String id
+    orConditions.push({ id: rawId });
+
+    // Numeric id
+    if (!isNaN(numericId)) {
+      orConditions.push({ id: numericId });
+    }
+
+    // 🔍 Find priest
+    const priest = await Priest.findOne({
+      $or: orConditions,
+    }).lean();
+
+    if (!priest) {
+      return res.status(404).json({
+        success: false,
+        message: "Priest not found",
+      });
+    }
+
+    // 🔑 Service history always uses STRING priest_id
+    const priestKey = String(priest.id);
+
+    const serviceHistory = await PriestHistory.find({
+      priest_id: priestKey,
+    })
+      .sort({ start_date: -1 })
+      .lean();
+
+    res.json({
+      success: true,
+      data: {
+        ...priest,
+        serviceHistory,
+      },
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching priest",
+    });
+  }
 });
+
+
+
 
 // ==================== PRIEST DETAIL (WITH SERVICE HISTORY) ====================
 // router.get('/priests/:id', async (req, res) => {
